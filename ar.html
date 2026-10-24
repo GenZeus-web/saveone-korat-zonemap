@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ล็อกขนาดจริง AR</title>
+<!-- ลองทำ: ล็อกตัวอย่าง 1 ล็อก ขนาดจริง วางบนพื้นด้วย AR · โมเดลจาก blender/lot-guide.py -- ar
+     model-viewer: Android = WebXR/Scene Viewer · iPhone = Quick Look (แปลง GLB → USDZ ให้เอง) · ต้องเปิดผ่าน https
+     ar-scale="fixed" = ห้ามบีบย่อ-ขยาย ขนาดเท่าของจริงเสมอ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<style>
+:root{ --bg:#f6f3ee; --card:#fff; --ink:#1f2328; --mute:#6b6f76; --line:#e3ded5;
+  --food:#e2671c; --food-bg:#fdeee2; --boot:#7b3fd6; --boot-bg:#efe6fc; --view:#e9e4dc; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#15171a; --card:#1f2226; --ink:#eceef1; --mute:#9aa0a8; --line:#30343a;
+  --food:#f0904a; --food-bg:#3a2617; --boot:#a77cf0; --boot-bg:#2a1f42; --view:#2a2e33; } }
+:root[data-theme="dark"]{ --bg:#15171a; --card:#1f2226; --ink:#eceef1; --mute:#9aa0a8; --line:#30343a;
+  --food:#f0904a; --food-bg:#3a2617; --boot:#a77cf0; --boot-bg:#2a1f42; --view:#2a2e33; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 'Noto Sans Thai',system-ui,sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 28px}
+h1{margin:0;font-size:22px;line-height:1.3}
+.sub{margin:2px 0 12px;color:var(--mute);font-size:14px}
+.tabs{display:flex;gap:8px;margin-bottom:10px}
+.tabs button{flex:1;min-height:52px;padding:6px 10px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit;font-weight:600;line-height:1.25;cursor:pointer}
+.tabs button small{display:block;font-weight:400;font-size:13px;color:var(--mute)}
+.tabs button[aria-pressed="true"][data-k="boot"]{border-color:var(--boot);background:var(--boot-bg)}
+.tabs button[aria-pressed="true"][data-k="food"]{border-color:var(--food);background:var(--food-bg)}
+.count{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.count span{margin-right:4px;font-size:14px;color:var(--mute)}
+.count button{flex:1;min-height:44px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
+.count button[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+model-viewer{display:block;width:100%;height:min(62vh,460px);background:var(--view);border-radius:14px;--poster-color:transparent}
+.arbtn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);padding:12px 22px;border:0;border-radius:999px;background:var(--ink);color:var(--bg);font:inherit;font-weight:700;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
+.noar{position:absolute;left:12px;right:12px;bottom:12px;margin:0;padding:8px 12px;border-radius:10px;background:var(--card);color:var(--mute);font-size:13px;text-align:center}
+.facts{margin:12px 0 0;padding:0;list-style:none}
+.facts li{padding:7px 0;border-bottom:1px solid var(--line)}
+.facts b{display:inline-block;min-width:96px}
+.how{margin:14px 0 0;padding-left:20px;color:var(--mute);font-size:14px}
+.back{display:inline-block;margin-top:16px;color:var(--mute);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ล็อกขนาดจริง</h1>
+  <p class="sub">วางล็อกตัวอย่างบนพื้นตรงหน้า · เดินดูรอบได้</p>
+
+  <div class="tabs" role="group" aria-label="เลือกล็อก">
+    <button data-k="boot" aria-pressed="true">เปิดท้าย<small>2.4 × 8 ม.</small></button>
+    <button data-k="food" aria-pressed="false">อาหาร<small>0.75 × 2 ม.</small></button>
+  </div>
+  <div class="count" role="group" aria-label="จำนวนล็อก">
+    <span>จอง</span>
+    <button data-n="1" aria-pressed="true">1</button><button data-n="2" aria-pressed="false">2</button>
+    <button data-n="3" aria-pressed="false">3</button><button data-n="4" aria-pressed="false">4</button>
+    <span>ล็อก</span>
+  </div>
+
+  <model-viewer id="mv" src="models/ar/lot-boot-1.glb" alt="ล็อกเปิดท้ายขนาดจริง"
+    ar ar-modes="webxr scene-viewer quick-look" ar-scale="fixed" ar-placement="floor"
+    camera-controls touch-action="pan-y" shadow-intensity="1" camera-orbit="-30deg 62deg auto" interaction-prompt="none">
+    <button slot="ar-button" class="arbtn">📱 วางบนพื้นจริง</button>
+    <p class="noar" id="noar" hidden>เปิดบนมือถือเพื่อใช้ AR</p>
+  </model-viewer>
+
+  <ul class="facts" id="facts"></ul>
+
+  <ol class="how">
+    <li>กด "วางบนพื้นจริง" · ส่องกล้องที่พื้น</li>
+    <li>แตะพื้นเพื่อวาง · เดินรอบได้</li>
+    <li>ขนาดเท่าของจริง ย่อ-ขยายไม่ได้</li>
+  </ol>
+  <a class="back" href="ผังโซนโคราช.html">← กลับผังโซน</a>
+</div>
+<script>
+// ข้อความ = ค่าคงที่ในไฟล์นี้ (ยังไม่ดึงจาก content.js เพราะเป็นหน้าทดลอง)
+// โมเดลแยกไฟล์ตามจำนวนล็อก (lot-boot-1..4 · lot-food-1..4) — iPhone Quick Look ต้องได้ไฟล์สำเร็จ ประกอบสดไม่ได้
+// เปิดท้ายจองได้ไม่เกิน 4 ล็อก (เว็บตลาด) · อาหาร "หลายล็อก" ไม่มีเพดาน ใช้ 1–4 ไปก่อน
+// อาหาร 1 ล็อก = 0.75 × 2 ม. (เจ้าของ 24 ต.ค. · เว็บบอกแค่ขนาดโต๊ะ) · กระบะ/คน = ค่าประมาณทั่วไป ตรงกับ PICKUP/HUMAN ใน lot-guide.py
+const f1=v=>+v.toFixed(1);
+const LOTS={
+  boot:{alt:'ล็อกเปิดท้ายขนาดจริง',facts:n=>{ const w=f1(2.4*n); return [
+    ['ทั้งหมด',`${w} × 8 ม. · ${f1(19.2*n)} ตร.ม.`],
+    ...(n===1?[['ที่ขาย','2.4 × 3.5 ม. ด้านหน้า'],['ที่จอดรถ','2.4 × 4.5 ม. ด้านหลัง']]
+             :[['ที่ขาย','ทุกที่ ยกเว้นตรงรถ · ข้างรถจัดร้านได้'],['ที่จอดรถ','อย่างน้อย 1 คัน ในส่วนลึก 4.5 ม.']]),
+    ['จอดรถ',n>=3?'แนวขวางได้':'แนวตั้ง'],['รถในภาพ','กระบะ 5.3 × 1.86 ม.'],['คนในภาพ','สูง 1.65 ม.']]; }},
+  food:{alt:'ล็อกอาหารขนาดจริง',facts:n=>[
+    ['ทั้งหมด',`${f1(.75*n)} × 2 ม. · ${n} โต๊ะ`],['1 ล็อก','0.75 × 2 ม.'],['โต๊ะ','75 × 75 ซม. ด้านหน้า'],['ที่ยืน','ลึก 1.25 ม. หลังโต๊ะ'],['คนในภาพ','สูง 1.65 ม.']]}
+};
+const mv=document.getElementById('mv'), facts=document.getElementById('facts'), noar=document.getElementById('noar');
+let kind='boot', count=1;
+function show(){
+  const L=LOTS[kind]; mv.src=`models/ar/lot-${kind}-${count}.glb`; mv.alt=`${L.alt} ${count} ล็อก`;
+  facts.innerHTML=L.facts(count).map(([a,b])=>`<li><b>${a}</b>${b}</li>`).join('');
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===kind));
+  document.querySelectorAll('.count button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.n===count));
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{ kind=b.dataset.k; show(); });
+document.querySelectorAll('.count button').forEach(b=>b.onclick=()=>{ count=+b.dataset.n; show(); });
+mv.addEventListener('load',()=>{ noar.hidden=mv.canActivateAR; });
+show();
+</script>
+</body>
+</html>

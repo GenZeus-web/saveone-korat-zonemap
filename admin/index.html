@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>แก้ผังโซนโคราช</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{ --bg:#f6f3ee; --card:#fff; --ink:#1f2328; --mute:#6b6f76; --line:#e3ded5; --acc:#e2671c; --ok:#1f8a4c; --ok-bg:#e3f5ea; --no:#d23c3c; --no-bg:#fde6e6; --field:#fbfaf7; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#15171a; --card:#1f2226; --ink:#eceef1; --mute:#9aa0a8; --line:#30343a; --acc:#f0904a; --ok:#4fd08a; --ok-bg:#163423; --no:#f07070; --no-bg:#3d1a1a; --field:#181a1d; } }
+:root[data-theme="dark"]{ --bg:#15171a; --card:#1f2226; --ink:#eceef1; --mute:#9aa0a8; --line:#30343a; --acc:#f0904a; --ok:#4fd08a; --ok-bg:#163423; --no:#f07070; --no-bg:#3d1a1a; --field:#181a1d; }
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 'Noto Sans Thai',system-ui,sans-serif;padding-bottom:96px}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px}
+header{padding:18px 0 8px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:22px} header p{margin:2px 0 0;color:var(--mute);font-size:14px}
+.who{font-size:13px;color:var(--mute);text-align:right} .who button{margin-top:4px}
+a{color:inherit}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:12px 0}
+.box h2{margin:0 0 8px;font-size:18px}
+.hint{font-size:13px;color:var(--mute);margin:6px 0 0}
+.hint code{background:var(--field);border:1px solid var(--line);border-radius:6px;padding:0 5px}
+ol.how{margin:8px 0;padding-left:22px;font-size:14px;display:grid;gap:4px}
+input,textarea,select{font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%;min-width:0}
+textarea{min-height:64px;resize:none;overflow:hidden;line-height:1.5}
+input:focus,textarea:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.sm{min-height:34px;padding:0 10px;font-size:13px;border-radius:9px;font-weight:600}
+.btn.ic{min-width:38px;min-height:38px;padding:0;font-size:15px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.del{color:var(--no)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* หมวด = พับได้ */
+details.sec{background:var(--card);border:1px solid var(--line);border-radius:16px;margin:10px 0;overflow:hidden}
+details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px 16px;min-height:56px;font-weight:700;font-size:16px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:'';margin-left:auto;flex:none;width:8px;height:8px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(45deg);transition:transform .2s}
+details.sec[open]>summary::after{transform:rotate(-135deg)}
+details.sec>summary small{font-weight:400;color:var(--mute);font-size:13px}
+.dot{flex:none;width:12px;height:12px;border-radius:50%;background:var(--c,var(--line))}
+.changed{flex:none;font-size:11px;font-weight:700;color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent);border-radius:999px;padding:1px 8px}
+.body{padding:0 16px 18px;display:grid;gap:18px}
+.f>label,.f>.lab{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+.f>label small,.f>.lab small{font-weight:400;color:var(--mute)}
+.items{display:grid;gap:8px}
+.it{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:start;padding:8px;border:1px solid var(--line);border-radius:12px}
+.it .cols{display:grid;gap:6px;grid-template-columns:var(--cols,1fr);min-width:0}
+.it .ord{display:grid;gap:2px}
+.it .ord .btn{min-height:21px;min-width:34px;font-size:12px;border-radius:7px}
+.it textarea{min-height:44px}
+.it .cols>.full{grid-column:1/-1}
+.it .em{width:56px;text-align:center;font-size:22px;padding:6px 2px}
+.it.ok{background:var(--ok-bg);border-color:transparent} .it.no{background:var(--no-bg);border-color:transparent}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.chk input{width:20px;height:20px;flex:none}
+.tier{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px}
+.tier .prices{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px 8px;align-items:center;font-size:13px;color:var(--mute)}
+.tier .prices b{color:var(--ink);font-size:13px}
+.ov{padding:12px;border:1px dashed var(--line);border-radius:12px;display:grid;gap:12px}
+.ov .f{padding-top:4px}
+/* รูป */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.ph{border:1px solid var(--line);border-radius:12px;overflow:hidden;display:grid;background:var(--field)}
+.ph img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;background:var(--line)}
+.ph .new{position:relative} .ph .new::after{content:'ใหม่';position:absolute;left:6px;top:6px;background:var(--acc);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.ph input{border:0;border-top:1px solid var(--line);border-radius:0;font-size:14px;padding:8px}
+.ph .row{padding:6px;gap:4px;justify-content:space-between;border-top:1px solid var(--line)}
+.addph{display:grid;place-items:center;min-height:130px;border:2px dashed var(--line);border-radius:12px;color:var(--mute);font-weight:600;cursor:pointer;text-align:center;padding:10px}
+/* แถบล่าง */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:color-mix(in srgb,var(--card) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.bar .wrap{display:flex;gap:8px;align-items:center;padding:0}
+.bar .st{flex:1;min-width:0;font-size:13px;color:var(--mute);line-height:1.35}
+.bar .st b{color:var(--ink)}
+.msg{padding:10px 14px;border-radius:12px;font-size:14px;margin:10px 0}
+.msg.err{background:var(--no-bg);color:var(--no)} .msg.ok{background:var(--ok-bg);color:var(--ok)}
+.msg[hidden],[hidden]{display:none!important}
+@media (max-width:560px){
+  .bar .btn{padding:0 12px}
+  .it.t-pairs .cols{grid-template-columns:1fr!important}
+  header{display:block} .who{text-align:left;margin-top:6px}
+  .bar .st{font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>แก้ผังโซนโคราช</h1><p>แก้ข้อความ · ราคา · ไอคอน · รูป แล้วกดบันทึก เว็บเปลี่ยนใน ~1–2 นาที</p></div>
+  <div class="who" id="who"></div>
+</header>
+
+<!-- เข้าระบบ: แต่ละคนใช้กุญแจ (token) GitHub ของตัวเอง · ไม่มีกุญแจกลาง · กุญแจอยู่แค่ในเบราว์เซอร์เครื่องนี้ -->
+<section class="box" id="login" hidden>
+  <h2>เข้าระบบ</h2>
+  <p class="hint" style="margin-top:0">ใช้บัญชี GitHub ของตัวเอง ที่เจ้าของ repo เชิญเข้าแล้ว</p>
+  <ol class="how">
+    <li>ล็อกอิน GitHub แล้วเปิด <a href="https://github.com/settings/tokens/new?scopes=repo&description=zonemap-admin" target="_blank" rel="noopener">หน้าสร้างกุญแจ</a> (ติ๊ก <b>repo</b> ไว้ให้แล้ว)</li>
+    <li>ตั้งวันหมดอายุ → กด <b>Generate token</b> → คัดลอกรหัสที่ขึ้นต้น <code>ghp_</code></li>
+    <li>วางช่องล่าง (ทำครั้งเดียวต่อเครื่อง)</li>
+  </ol>
+  <div class="row"><input type="password" id="tok" placeholder="ghp_…" autocomplete="off" style="flex:1 1 220px"><button class="btn pri" id="go">เข้าระบบ</button></div>
+  <label class="chk" style="margin-top:10px"><input type="checkbox" id="remember" checked> จำไว้ในเครื่องนี้ (เครื่องส่วนตัวเท่านั้น)</label>
+  <p class="hint">ไม่ได้ล็อกอินก็ <button class="btn sm" id="local">ลองแก้ + ดูตัวอย่าง</button> ได้ แต่บันทึกขึ้นเว็บไม่ได้</p>
+  <div class="msg err" id="loginErr" hidden></div>
+</section>
+
+<div class="msg" id="msg" hidden></div>
+
+<section id="editor" hidden>
+  <p class="hint"><code>[ข้อความ]</code> = ตัวเล็กสีเทา · กด Enter ในกล่องใหญ่ = ขึ้นบรรทัดใหม่ · <code>?</code> = ยังรอยืนยัน · ไอคอนใช้อีโมจิจากแป้นมือถือ</p>
+  <div id="secs"></div>
+</section>
+</div>
+
+<div class="bar" id="bar" hidden><div class="wrap">
+  <div class="st" id="st"></div>
+  <button class="btn" id="prev" title="เปิดหน้าเว็บพร้อมที่แก้ (ยังไม่บันทึก)">👁 ดูตัวอย่าง</button>
+  <button class="btn pri" id="save">💾 บันทึก</button>
+</div></div>
+
+<script>
+// ══ ตั้งค่า repo ══ เปิดบน <owner>.github.io/<repo>/ = อ่านจากที่อยู่เอง · ที่อื่น (เครื่องตัวเอง) = ค่าตั้งต้น
+const GH=(()=>{ const m=location.hostname.match(/^([\w-]+)\.github\.io$/), r=location.pathname.split('/')[1];
+  return m&&r?{owner:m[1],repo:r}:{owner:'GenZeus-web',repo:'saveone-korat-zonemap'}; })();
+GH.branch='main'; GH.file='content.js';
+// หน้านี้อยู่ admin/ (เปิดด้วย …/admin) · ไฟล์เว็บอยู่ชั้นบน
+const UP='../', PAGE=UP+'ผังโซนโคราช.html', DRAFT='zonemap-draft', TOKK='zonemap-gh-token';
+const $=id=>document.getElementById(id);
+
+// ══ สถานะ ══
+let C=null, ORIG='', baseSha=null, user=null, token=null;
+const pending={};          // 'photos/u-….jpg' → data URI (รูปที่เพิ่ม แต่ยังไม่อัปขึ้น)
+const clone=o=>JSON.parse(JSON.stringify(o));
+const toJs=c=>'window.CONTENT='+JSON.stringify(c,null,1)+';\n';
+const fromJs=s=>JSON.parse(s.replace(/^﻿?\s*window\.CONTENT\s*=\s*/,'').replace(/;\s*$/,''));
+
+// ══ GitHub API ══
+async function api(path,opt={}){
+  const r=await fetch('https://api.github.com'+path,{...opt,headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+token,...(opt.body?{'Content-Type':'application/json'}:{})}});
+  if(!r.ok){ let m=''; try{ m=(await r.json()).message; }catch(e){} const e=new Error(m||r.statusText); e.status=r.status; throw e; }
+  return r.status===204?null:r.json();
+}
+const R=p=>`/repos/${GH.owner}/${GH.repo}${p}`;
+const b64ToText=b=>new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g,'')),c=>c.charCodeAt(0)));
+const textToB64=t=>{ const u=new TextEncoder().encode(t); let s=''; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode(...u.subarray(i,i+0x8000)); return btoa(s); };
+async function remoteFile(ref){ const f=await api(R(`/contents/${GH.file}?ref=${ref}`)); return {sha:f.sha,text:b64ToText(f.content)}; }
+
+// ══ เข้าระบบ ══
+async function login(t,remember){
+  token=t; $('loginErr').hidden=true;
+  try{
+    user=await api('/user');
+    const repo=await api(R(''));
+    if(!repo.permissions||!repo.permissions.push) throw new Error(`บัญชี ${user.login} ยังไม่มีสิทธิ์แก้ repo นี้ — ให้เจ้าของเชิญเป็น collaborator ก่อน`);
+    (remember?localStorage:sessionStorage).setItem(TOKK,t);
+    const f=await remoteFile(GH.branch); baseSha=f.sha; start(fromJs(f.text));
+  }catch(e){
+    token=null; user=null; try{ localStorage.removeItem(TOKK); sessionStorage.removeItem(TOKK); }catch(_){}
+    $('login').hidden=false;
+    $('loginErr').textContent=e.status===401?'กุญแจไม่ถูกต้องหรือหมดอายุ — สร้างใหม่แล้ววางอีกครั้ง':e.status===404?'มองไม่เห็น repo — กุญแจต้องติ๊ก repo และบัญชีต้องถูกเชิญแล้ว':e.message;
+    $('loginErr').hidden=false;
+  }
+}
+function logout(){ try{ localStorage.removeItem(TOKK); sessionStorage.removeItem(TOKK); }catch(e){} location.reload(); }
+async function localMode(){
+  try{ const t=await (await fetch(UP+GH.file+'?t='+Date.now(),{cache:'no-store'})).text(); start(fromJs(t)); }
+  catch(e){ $('loginErr').textContent='โหลดเนื้อหาไม่ได้: '+e.message; $('loginErr').hidden=false; }
+}
+
+// ══ เริ่มแก้ ══
+function start(content){
+  C=content; ORIG=JSON.stringify(C);
+  // ร่างที่ค้างจากรอบก่อน (ฐานเดียวกัน) → ใช้ต่อได้
+  try{ const d=JSON.parse(localStorage.getItem(DRAFT)||'null');
+    if(d&&d.content&&JSON.stringify(d.content)!==ORIG&&d.orig===ORIG&&confirm('มีที่แก้ค้างไว้ในเครื่องนี้ (ยังไม่บันทึก) — ใช้ต่อไหม?')){ C=d.content; Object.assign(pending,d.pending||{}); } }catch(e){}
+  $('login').hidden=true; $('editor').hidden=false; $('bar').hidden=false;
+  $('who').innerHTML=user?`เข้าระบบเป็น <b>${esc(user.login)}</b><br><button class="btn sm" id="out">ออก</button>`:`โหมดลอง · บันทึกไม่ได้<br><button class="btn sm" id="out">เข้าระบบ</button>`;
+  $('out').onclick=logout;
+  renderAll(); dirty();
+}
+
+// ══ หมวด + ช่อง ══
+// ชนิดช่อง: text · area · list (ข้อความทีละข้อ) · pairs (2 ช่องต่อแถว) · icons ([อีโมจิ, ป้าย]) · facts · tiers (ราคา) · photos · tel (≤2 เบอร์)
+const F=(type,k,label,o={})=>({type,k,label,...o});
+const ICON_OK=F('icons','ok','✅ ขายได้',{cls:'ok'}), ICON_NO=F('icons','no','🚫 ห้ามขาย',{cls:'no',hint:'ใส่ได้หลายอีโมจิ เช่น 🔥💨 · หน้าเว็บขีดวงกลมแดงทับให้เอง'});
+const NOTO=F('text','noTo','ห้ามขาย → ไปขายที่ไหนแทน',{hint:'เว้นว่าง = ไม่แสดง'});
+const PHOTOS=F('photos','photos','📷 รูปบรรยากาศ',{hint:'ปัดซ้าย-ขวาบนเว็บ · รูปแรกโชว์ก่อน'});
+const WARN=F('area','warn','หมายเหตุสีส้มท้ายแผง',{hint:'เรื่องที่ยังรอยืนยัน · เว้นว่าง = ไม่แสดง'});
+const TEL=F('tel','tel','📞 ปุ่มโทร',{hint:'เบอร์แรก = ปุ่มใหญ่ · เบอร์ที่ 2 โชว์เมื่อไม่มี IG'});
+const GROUP=[ICON_OK,ICON_NO,NOTO,
+  F('tiers','tiers','💰 ราคา (บาท/ล็อก/วัน · จองผ่านแอป)'),
+  F('text','lot','ขนาดล็อก (การ์ด 3 มิติ)'),F('text','m2','พื้นที่ต่อล็อก (การ์ด 3 มิติ)'),
+  F('facts','facts','กล่องข้อมูลสั้น',{hint:'ไฟฟ้า + พื้นที่ เว็บใส่ต่อท้ายให้เอง'}),
+  F('pairs','steps','วิธีจอง',{cols:['ขั้นตอน','รายละเอียด']}),
+  F('list','rules','📋 เงื่อนไข'),F('list','refund','💸 คืนเงิน'),
+  TEL,F('text','ig','IG ของโซน (ชื่อบัญชี ไม่ต้องมี @)'),WARN,PHOTOS];
+// โซนในกลุ่ม: ชื่อ/ที่ตั้งของตัวเอง + ช่องที่ "ต่างจากกลุ่มได้"
+const NAME=[F('text','name','ชื่อโซน'),F('text','where','📍 อยู่ตรงไหน')];
+const OVERRIDE=[ICON_OK,ICON_NO,NOTO,PHOTOS,WARN];
+const KIND_FIELDS={
+  event:[...NAME,F('text','size','ขนาด (การ์ดในรายการ)'),ICON_OK,F('text','price','ราคา (ตัวใหญ่)'),F('text','priceNote','ข้อความข้างราคา'),
+    F('facts','facts','กล่องข้อมูลสั้น',{hint:'พื้นที่ เว็บคำนวณใส่ให้เอง'}),TEL,WARN,PHOTOS],
+  park:[...NAME,F('text','near','🧭 ใกล้โซนไหน'),F('text','hours','🕙 เวลาเปิด')]};
+const COLOR={food:'#e2671c',boot:'#7b3fd6',event:'#0e9384',park:'#2f7bd9'};
+function sections(){
+  const kindOf=z=>z.group?C.groups[z.group].kind:z.kind;
+  return [
+    {id:'site',title:'🏠 หน้าแรก',sub:'หัวเว็บ · เริ่มขายครั้งแรก · ติดต่อ',obj:()=>C.site,fields:[
+      F('text','eyebrow','หัวเล็กบนสุด'),F('text','title','หัวข้อใหญ่'),F('text','subtitle','คำอธิบายใต้หัว'),
+      F('text','draft','ป้ายสีส้มใต้หัว',{hint:'เว้นว่าง = ไม่แสดง (ใช้ตอนเลิกเป็นร่าง)'}),
+      F('pairs','firstSteps','เริ่มขายครั้งแรก',{cols:['ขั้นตอน','รายละเอียด']}),F('text','firstNote','หมายเหตุใต้ขั้นตอน'),
+      F('pairs','calls','📞 เบอร์ติดต่อสำนักงาน',{cols:['เบอร์','ใช้สำหรับ']}),
+      F('pairs','office','ข้อมูลสำนักงาน',{cols:['หัวข้อ','ข้อมูล']}),F('area','footer','ข้อความท้ายเว็บ')]},
+    {id:'g-food',title:'🍢 ขายอาหาร',sub:'ใช้ร่วมทุกโซนอาหาร',c:COLOR.food,obj:()=>C.groups.food,fields:GROUP},
+    {id:'g-boot',title:'👕 ขายสินค้า · เปิดท้าย',sub:'ใช้ร่วมทุกโซนเปิดท้าย',c:COLOR.boot,obj:()=>C.groups.boot,fields:GROUP},
+    ...C.zones.map((z,i)=>({id:'z-'+z.id,title:z.name||z.id,sub:z.group?'โซน · '+C.kinds[kindOf(z)]:C.kinds[kindOf(z)],c:COLOR[kindOf(z)],obj:()=>C.zones[i],
+      fields:z.group?NAME:KIND_FIELDS[z.kind]||NAME,override:z.group?{from:()=>C.groups[z.group],fields:OVERRIDE}:null})),
+    {id:'common',title:'⚙️ ทั่วไป',sub:'ฤดูราคา · ค่าไฟ · ชื่อหมวด',obj:()=>C,fields:[
+      F('text','season.low','ช่วงราคาปกติ (low)'),F('text','season.high','ช่วงราคาสูง (high)'),
+      F('text','elec','⚡ ค่าไฟ (ทุกโซนขาย)'),F('area','feeNote','ข้อความใต้ราคาวันนี้'),
+      F('text','kinds.food','ชื่อหมวด อาหาร'),F('text','kinds.boot','ชื่อหมวด สินค้า'),F('text','kinds.event','ชื่อหมวด ลานกิจกรรม'),F('text','kinds.park','ชื่อหมวด ที่จอดรถ')],
+      hint:'ฤดูราคา: ปกติ 13 เม.ย.–31 ต.ค. · สูง 1 พ.ย.–12 เม.ย. — วันที่สลับราคาตั้งในโค้ด ข้อความนี้แค่ป้าย'}];
+}
+const getP=(o,k)=>k.split('.').reduce((a,p)=>a==null?a:a[p],o);
+const setP=(o,k,v)=>{ const ps=k.split('.'), last=ps.pop(); ps.reduce((a,p)=>a[p]??(a[p]={}),o)[last]=v; };
+
+// ══ วาดฟอร์ม ══
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const h=(tag,attrs={},...kids)=>{ const e=document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs)){ if(k.startsWith('on')) e.addEventListener(k.slice(2),v); else if(v!=null&&v!==false) e.setAttribute(k,v===true?'':v); }
+  for(const c of kids.flat()) if(c!=null&&c!==false) e.append(c.nodeType?c:document.createTextNode(c)); return e; };
+const OPEN=new Set();
+function renderAll(){
+  const box=$('secs'); box.innerHTML='';
+  for(const s of sections()){
+    const d=h('details',{class:'sec','data-id':s.id,open:OPEN.has(s.id)},
+      h('summary',{},h('span',{class:'dot',style:s.c?'--c:'+s.c:null}),h('span',{},s.title,' ',h('small',{},s.sub||'')),h('span',{class:'changed',hidden:true},'แก้แล้ว')));
+    d.addEventListener('toggle',()=>{ d.open?OPEN.add(s.id):OPEN.delete(s.id); if(d.open&&!d.querySelector('.body')) d.append(body(s)); if(d.open) fitAll(d); });
+    if(d.open) d.append(body(s));
+    box.append(d);
+  }
+  marks(); fitAll(box);
+}
+function rerender(s){ const d=document.querySelector(`details[data-id="${s.id}"]`); const b=d.querySelector('.body'); if(b) b.replaceWith(body(s)); fitAll(d); dirty(); }
+// กล่องข้อความสูงตามเนื้อหา (วัดได้เฉพาะตอนมองเห็น)
+const fit=t=>{ if(!t.offsetParent) return; t.style.height='auto'; t.style.height=t.scrollHeight+2+'px'; };
+const fitAll=el=>el.querySelectorAll('textarea').forEach(fit);
+document.addEventListener('input',e=>{ if(e.target.tagName==='TEXTAREA') fit(e.target); });
+window.addEventListener('resize',()=>fitAll(document));
+function body(s){
+  const b=h('div',{class:'body'}), o=s.obj();
+  if(s.hint) b.append(h('p',{class:'hint',style:'margin:0'},s.hint));
+  for(const f of s.fields) b.append(field(s,o,f));
+  if(s.override){ const g=s.override.from(), ov=h('div',{class:'ov'},h('p',{class:'hint',style:'margin:0'},'ปกติใช้ของกลุ่ม · ติ๊กออกเพื่อตั้งเฉพาะโซนนี้'));
+    for(const f of s.override.fields){ const own=Object.prototype.hasOwnProperty.call(o,f.k);
+      ov.append(h('label',{class:'chk'},h('input',{type:'checkbox',checked:!own,onchange:e=>{ if(e.target.checked) delete o[f.k]; else o[f.k]=clone(g[f.k]??(f.type==='text'||f.type==='area'?'':[])); rerender(s); }}),
+        `${f.label.replace(/^[^\wก-๙]+/,'')} — ใช้ของกลุ่ม`));
+      if(own) ov.append(field(s,o,f)); }
+    b.append(ov); }
+  return b;
+}
+function field(s,o,f){
+  const w=h('div',{class:'f'}), lab=(t=f.label)=>h('div',{class:'lab'},t,f.hint?h('small',{},' · '+f.hint):'');
+  const set=v=>{ setP(o,f.k,v); dirty(); };
+  const arr=()=>{ let a=getP(o,f.k); if(!Array.isArray(a)){ a=[]; setP(o,f.k,a); } return a; };
+  if(f.type==='text'||f.type==='area'){
+    const id='i'+Math.random().toString(36).slice(2,8);
+    const inp=f.type==='text'?h('input',{id,value:getP(o,f.k)??''}):h('textarea',{id,rows:Math.min(6,String(getP(o,f.k)??'').split('\n').length+1)});
+    if(f.type==='area') inp.value=getP(o,f.k)??'';
+    inp.addEventListener('input',()=>set(inp.value));
+    w.append(h('label',{for:id},f.label,f.hint?h('small',{},' · '+f.hint):''),inp); return w; }
+  if(f.type==='photos'){ w.append(lab(),photoGrid(s,arr())); return w; }
+  if(f.type==='tiers'){ const a=arr(), list=h('div',{class:'items'});
+    a.forEach((t,i)=>{ const num=(sea,j)=>{ const x=h('input',{type:'number',inputmode:'numeric',value:t[sea]?.[j]??''}); x.addEventListener('input',()=>{ (t[sea]||(t[sea]=[0,0]))[j]=x.value===''?'':Number(x.value); dirty(); }); return x; };
+      const codes=h('textarea',{rows:Math.max(2,String(t.codes||'').split('\n').length)}); codes.value=t.codes||''; codes.addEventListener('input',()=>{ t.codes=codes.value; dirty(); });
+      list.append(h('div',{class:'tier'},h('div',{class:'row',style:'justify-content:space-between'},h('b',{},'ราคาแถวที่ '+(i+1)),h('div',{class:'row'},orderBtns(s,a,i),h('button',{class:'btn ic sm del',title:'ลบแถวนี้',onclick:()=>{ if(confirm('ลบราคาแถวที่ '+(i+1)+'?')){ a.splice(i,1); rerender(s); } }},'✕'))),
+        h('div',{},h('small',{class:'hint'},'รหัสล็อก / จุดขาย'),codes),
+        h('div',{class:'prices'},h('span'),h('b',{},'จ.–พฤ.'),h('b',{},'ศ.–อา.'),
+          h('span',{},'ปกติ · '+(C.season.low||'')),num('low',0),num('low',1),h('span',{},'สูง · '+(C.season.high||'')),num('high',0),num('high',1)))); });
+    w.append(lab(),list,h('button',{class:'btn sm',onclick:()=>{ a.push({codes:'',low:[0,0],high:[0,0]}); rerender(s); }},'+ เพิ่มแถวราคา')); return w; }
+  // แถวรายการ: list · pairs · icons · facts · tel
+  const a=arr(), list=h('div',{class:'items'});
+  const mk={list:()=>'',pairs:()=>['',''],icons:()=>['',''],facts:()=>['','',''],tel:()=>''}[f.type];
+  a.forEach((it,i)=>{
+    const cell=(j,ph,cls)=>{ const big=f.type!=='icons'&&j===(f.type==='facts'?2:1)||f.type==='list';
+      const val=f.type==='list'||f.type==='tel'?it:it[j];
+      const x=big?h('textarea',{rows:1,placeholder:ph,class:cls}):h('input',{value:val??'',placeholder:ph,class:cls});
+      if(big) x.value=val??'';
+      x.addEventListener('input',()=>{ if(f.type==='list'||f.type==='tel') a[i]=x.value; else it[j]=x.value; dirty(); }); return x; };
+    let cols, tpl='1fr';
+    if(f.type==='list'||f.type==='tel') cols=[cell(0,f.type==='tel'?'044-…':'')];
+    else if(f.type==='icons'){ cols=[cell(0,'🙂','em'),cell(1,'ป้าย')]; tpl='56px 1fr'; }
+    else if(f.type==='facts'){ cols=[cell(0,'📐','em'),cell(1,'ป้าย'),cell(2,'ค่า','full'),
+        h('label',{class:'chk full'},h('input',{type:'checkbox',checked:!!it[3],onchange:e=>{ if(e.target.checked) it[3]=1; else it.length=3; dirty(); }}),'เต็มแถว')]; tpl='56px 1fr'; }
+    else { cols=[cell(0,f.cols[0]),cell(1,f.cols[1])]; }
+    list.append(h('div',{class:`it t-${f.type} ${f.cls||''}`},orderBtns(s,a,i,true),h('div',{class:'cols',style:'--cols:'+tpl},cols),
+      h('button',{class:'btn ic del',title:'ลบ',onclick:()=>{ a.splice(i,1); rerender(s); }},'✕')));
+  });
+  const full=f.type==='tel'&&a.length>=2;
+  w.append(lab(),list,full?'':h('button',{class:'btn sm',style:'margin-top:8px',onclick:()=>{ a.push(mk()); rerender(s); }},'+ เพิ่ม'));
+  return w;
+}
+function orderBtns(s,a,i,col){ const mv=d=>{ const j=i+d; if(j<0||j>=a.length) return; [a[i],a[j]]=[a[j],a[i]]; rerender(s); };
+  return h('div',{class:col?'ord':'row'},h('button',{class:'btn ic sm',title:'ขึ้น',disabled:i===0,onclick:()=>mv(-1)},'↑'),h('button',{class:'btn ic sm',title:'ลง',disabled:i===a.length-1,onclick:()=>mv(1)},'↓')); }
+
+// ══ รูป ══ ย่อในเครื่องก่อน (ด้านยาว 1200 px · JPEG) · ชื่อไฟล์ใหม่ทุกครั้ง (assets.js ฝังรูปเก่าไว้ ชื่อซ้ำ = เว็บยังเห็นรูปเก่า)
+const imgSrc=p=>pending[p]||UP+p;
+function photoGrid(s,a){
+  const g=h('div',{class:'pgrid'});
+  a.forEach((p,i)=>{ const cap=h('input',{value:p[1]||'',placeholder:'คำบรรยายรูป'}); cap.addEventListener('input',()=>{ p[1]=cap.value; dirty(); });
+    g.append(h('div',{class:'ph'},h('div',{class:pending[p[0]]?'new':''},h('img',{src:imgSrc(p[0]),alt:p[1]||'',loading:'lazy'})),cap,
+      h('div',{class:'row'},h('button',{class:'btn ic sm',title:'เลื่อนซ้าย',disabled:i===0,onclick:()=>{ [a[i-1],a[i]]=[a[i],a[i-1]]; rerender(s); }},'←'),
+        h('button',{class:'btn sm',onclick:()=>pick(false,async([f])=>{ p[0]=await addPhoto(f); rerender(s); })},'เปลี่ยน'),
+        h('button',{class:'btn ic sm',title:'เลื่อนขวา',disabled:i===a.length-1,onclick:()=>{ [a[i+1],a[i]]=[a[i],a[i+1]]; rerender(s); }},'→'),
+        h('button',{class:'btn ic sm del',title:'เอารูปออก',onclick:()=>{ if(confirm('เอารูปนี้ออก?')){ a.splice(i,1); rerender(s); } }},'✕')))); });
+  g.append(h('div',{class:'addph',role:'button',tabindex:0,onclick:()=>pick(true,async fs=>{ for(const f of fs) a.push([await addPhoto(f),'']); rerender(s); })},'＋ เพิ่มรูป',h('br'),h('small',{},'เลือกได้หลายรูป')));
+  return g;
+}
+function pick(multi,cb){ const i=h('input',{type:'file',accept:'image/*',multiple:multi}); i.onchange=()=>i.files.length&&cb([...i.files]).catch(e=>say('err','ใส่รูปไม่ได้: '+e.message)); i.click(); }
+async function addPhoto(file){
+  const url=URL.createObjectURL(file);
+  try{ const img=await new Promise((ok,no)=>{ const im=new Image(); im.onload=()=>ok(im); im.onerror=()=>no(new Error('เปิดรูปนี้ไม่ได้')); im.src=url; });
+    const k=Math.min(1,1200/Math.max(img.naturalWidth,img.naturalHeight)), c=document.createElement('canvas');
+    c.width=Math.round(img.naturalWidth*k); c.height=Math.round(img.naturalHeight*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    const d=new Date(), pad=n=>String(n).padStart(2,'0');
+    const path=`photos/u-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}-${Math.random().toString(36).slice(2,6)}.jpg`;
+    pending[path]=c.toDataURL('image/jpeg',.82); return path;
+  } finally { URL.revokeObjectURL(url); }
+}
+// รูปที่ยังใช้อยู่ (เพิ่มแล้วลบทิ้ง = ไม่ต้องอัป)
+const usedPhotos=()=>{ const u=new Set(); JSON.stringify(C,(k,v)=>{ if(typeof v==='string'&&pending[v]) u.add(v); return v; }); return [...u]; };
+
+// ══ แก้แล้ว? · ร่าง ══
+function marks(){ const o=JSON.parse(ORIG);
+  for(const s of sections()){ const el=document.querySelector(`details[data-id="${s.id}"] .changed`); if(!el) continue;
+    const before=s.id==='site'?o.site:s.id==='g-food'?o.groups.food:s.id==='g-boot'?o.groups.boot:s.id==='common'?[o.season,o.elec,o.feeNote,o.kinds]:s.id.startsWith('z-')?o.zones.find(z=>'z-'+z.id===s.id):null;
+    const now=s.id==='common'?[C.season,C.elec,C.feeNote,C.kinds]:s.obj();
+    el.hidden=JSON.stringify(before)===JSON.stringify(now); } }
+function changedNames(){ return [...document.querySelectorAll('details.sec')].filter(d=>!d.querySelector('.changed').hidden).map(d=>d.querySelector('summary>span:nth-child(2)').firstChild.textContent.trim()); }
+let dt=0;
+function dirty(){ const ch=JSON.stringify(C)!==ORIG;
+  clearTimeout(dt); dt=setTimeout(()=>{ marks(); keepDraft(); const n=changedNames();
+    $('st').innerHTML=ch?`<b>ยังไม่บันทึก</b> · ${esc(n.join(' · '))}`:(user?'ตรงกับเว็บจริง':'โหมดลอง · กดดูตัวอย่างได้'); },150);
+  $('save').disabled=!ch||!user; }
+function keepDraft(){ try{ localStorage.setItem(DRAFT,JSON.stringify({content:C,orig:ORIG,pending:Object.fromEntries(usedPhotos().map(p=>[p,pending[p]]))})); return true; }
+  catch(e){ try{ localStorage.setItem(DRAFT,JSON.stringify({content:C,orig:ORIG,pending:{}})); }catch(_){} return false; } }
+
+// ══ ดูตัวอย่าง ══ หน้าเว็บจริงอ่านร่างจาก localStorage เมื่อมี ?preview
+$('prev').onclick=()=>{ if(!keepDraft()) say('err','รูปใหม่ใหญ่เกินที่เก็บร่างของเบราว์เซอร์ — ตัวอย่างจะยังไม่เห็นรูปใหม่ (บันทึกแล้วเห็นปกติ)'); window.open(PAGE+'?preview','zonemap-preview'); };
+
+// ══ บันทึก ══ blob → tree → commit → ย้าย main · รวมทุกอย่างเป็น 1 commit
+function check(){ const bad=[];
+  for(const g of ['food','boot']) for(const t of C.groups[g].tiers||[]) for(const s of ['low','high']) for(const v of t[s]||[]) if(!(Number(v)>0)) bad.push(`ราคา ${C.kinds[g]} ต้องเป็นตัวเลขมากกว่า 0`);
+  for(const z of C.zones) if(!String(z.name||'').trim()) bad.push(`มีโซนที่ไม่มีชื่อ (${z.id})`);
+  for(const g of ['food','boot']) if(!(C.groups[g].tiers||[]).length) bad.push(`${C.kinds[g]} ต้องมีราคาอย่างน้อย 1 แถว`);
+  return [...new Set(bad)]; }
+$('save').onclick=async()=>{
+  const bad=check(); if(bad.length){ say('err','ยังบันทึกไม่ได้: '+bad.join(' · ')); return; }
+  const btn=$('save'); btn.disabled=true; btn.textContent='กำลังบันทึก…';
+  try{
+    const head=await api(R(`/git/ref/heads/${GH.branch}`)), headSha=head.object.sha;
+    const cur=await remoteFile(headSha);
+    if(cur.sha!==baseSha&&!confirm('มีคนบันทึกเนื้อหาไปก่อนระหว่างที่คุณแก้\n\nกด OK = บันทึกของคุณทับ (ของเขาที่ต่างจากคุณจะหาย)\nกด Cancel = ยังไม่บันทึก (โหลดหน้าใหม่เพื่อดูของเขา · ที่คุณแก้เก็บเป็นร่างไว้)')) throw new Error('ยกเลิก — ยังไม่ได้บันทึก');
+    const commit=await api(R(`/git/commits/${headSha}`));
+    const files=usedPhotos().map(p=>({path:p,b64:pending[p].split(',')[1]})).concat([{path:GH.file,b64:textToB64(toJs(C))}]);
+    const tree=[];
+    for(const f of files){ btn.textContent=`กำลังอัป ${tree.length+1}/${files.length}…`;
+      const b=await api(R('/git/blobs'),{method:'POST',body:JSON.stringify({content:f.b64,encoding:'base64'})}); tree.push({path:f.path,mode:'100644',type:'blob',sha:b.sha}); }
+    const t=await api(R('/git/trees'),{method:'POST',body:JSON.stringify({base_tree:commit.tree.sha,tree})});
+    const n=changedNames(), ph=files.length-1;
+    const msg=`แก้เนื้อหาผ่านหน้าแอดมิน (${user.login})\n\n${n.map(x=>'- '+x).join('\n')}${ph?`\n- รูปใหม่ ${ph} รูป`:''}`;
+    const c=await api(R('/git/commits'),{method:'POST',body:JSON.stringify({message:msg,tree:t.sha,parents:[headSha]})});
+    await api(R(`/git/refs/heads/${GH.branch}`),{method:'PATCH',body:JSON.stringify({sha:c.sha})});
+    // สำเร็จ: ฐานใหม่ = ที่เพิ่งบันทึก
+    baseSha=(await remoteFile(c.sha)).sha; ORIG=JSON.stringify(C); for(const p of usedPhotos()) delete pending[p];
+    try{ localStorage.removeItem(DRAFT); }catch(e){}
+    renderAll(); dirty();
+    say('ok',`บันทึกแล้ว ✓ เว็บจริงเปลี่ยนในประมาณ 1–2 นาที`,`https://github.com/${GH.owner}/${GH.repo}/commit/${c.sha}`);
+  }catch(e){ say('err',e.status===409||e.status===422?'บันทึกชนกับคนอื่นพอดี — กดบันทึกอีกครั้ง':(e.message.startsWith('ยกเลิก')?e.message:'บันทึกไม่สำเร็จ: '+e.message)); }
+  finally{ btn.textContent='💾 บันทึก'; dirty(); }
+};
+function say(kind,text,link){ const m=$('msg'); m.className='msg '+kind; m.innerHTML=esc(text)+(link?` · <a href="${esc(link)}" target="_blank" rel="noopener">ดูประวัติการแก้</a>`:''); m.hidden=false; m.scrollIntoView({block:'nearest',behavior:'smooth'}); }
+window.addEventListener('beforeunload',e=>{ if(C&&JSON.stringify(C)!==ORIG){ e.preventDefault(); e.returnValue=''; } });
+
+// ══ เริ่ม ══
+$('go').onclick=()=>{ const t=$('tok').value.trim(); if(t) login(t,$('remember').checked); };
+$('tok').addEventListener('keydown',e=>{ if(e.key==='Enter') $('go').click(); });
+$('local').onclick=localMode;
+{ let t=null; try{ t=localStorage.getItem(TOKK)||sessionStorage.getItem(TOKK); }catch(e){}
+  if(t) login(t,!!localStorage.getItem(TOKK)); else $('login').hidden=false; }
+</script>
+</body>
+</html>

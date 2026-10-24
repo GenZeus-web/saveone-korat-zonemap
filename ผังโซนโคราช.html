@@ -229,10 +229,10 @@ footer{margin:22px 0 6px;color:var(--mute);font-size:12px;line-height:1.6}
 <body>
 <div class="wrap">
 <header>
-  <p class="eyebrow">ตลาดเซฟวัน โคราช</p>
-  <h1>มาขายที่ไหนดี?</h1>
-  <p>แตะโซนบนผัง ดูว่าขายอะไรได้ ราคา และวิธีจอง</p>
-  <span class="draft">ร่าง · ? = ยังรอยืนยัน</span>
+  <p class="eyebrow" id="sEyebrow"></p>
+  <h1 id="sTitle"></h1>
+  <p id="sSub"></p>
+  <span class="draft" id="sDraft"></span>
 </header>
 
 <div class="filters" role="group" aria-label="อยากขายอะไร">
@@ -270,90 +270,42 @@ footer{margin:22px 0 6px;color:var(--mute);font-size:12px;line-height:1.6}
 <div class="more">
   <section class="box">
     <h3>เริ่มขายครั้งแรก</h3>
-    <ol class="flow">
-      <li><div><b>โหลดแอป SAVEONE แล้วสมัคร</b><span>ใช้เบอร์โทรจริง รับรหัส OTP</span></div></li>
-      <li><div><b>ผูกบัญชีก่อนจ่ายเงิน</b><span>ไม่ผูก = จองไม่ได้</span></div></li>
-      <li><div><b>จองในแอป 12:00–15:00</b><span>ขายวันถัดไป · หรือจองที่เคาน์เตอร์ 15:00–18:00 พร้อมบัตรประชาชน</span></div></li>
-      <li><div><b>มาตั้งร้าน</b><span>เปิดท้ายสุ่มล็อกใหม่ทุกวัน ดูเลขล็อกในแอป</span></div></li>
-    </ol>
-    <p class="note">จองไม่ได้ / ข้อมูลซ้ำ → Inbox เพจ saveonekorat หรือถามที่เคาน์เตอร์</p>
+    <ol class="flow" id="sFirst"></ol>
+    <p class="note" id="sFirstNote"></p>
   </section>
   <section class="box">
     <h3>ติดต่อสำนักงาน</h3>
-    <div class="calls">
-      <a class="btn" href="tel:044222588">📞 044-222-588<small>ทุกโซน</small></a>
-      <a class="btn" href="tel:044299169">📞 044-299-169<small>อาหาร</small></a>
-      <a class="btn" href="tel:044300555">📞 044-300-555<small>เปิดท้าย</small></a>
-    </div>
-    <dl class="kv"><dt>เปิด</dt><dd>15:00–22:00</dd>
-      <dt>LINE</dt><dd>@saveonemarket</dd><dt>Facebook</dt><dd>saveonekorat</dd>
-      <dt>ที่อยู่</dt><dd>1485/1 ถ.มิตรภาพ ต.ในเมือง อ.เมือง จ.นครราชสีมา</dd></dl>
+    <div class="calls" id="sCalls"></div>
+    <dl class="kv" id="sOffice"></dl>
   </section>
 </div>
 
 <div class="lbx" id="lbx" role="dialog" aria-label="ดูรูปใหญ่"><img alt=""><p></p></div>
 
-<footer>ผังจากแผนที่ตลาดเซฟวัน 28 ส.ค. 69 · ข้อมูลและภาพถ่ายจากหน้าเว็บ “มาขาย” ของตลาด (ดึง 23–24 ต.ค. 69) · โมเดลรถ/ร้าน/คน/ต้นไม้: Kenney.nl (CC0)</footer>
+<footer id="sFooter"></footer>
 </div>
 
 <script src="assets.js"></script>
+<!-- เนื้อหา: ?t= เปลี่ยนทุกนาที กัน GitHub Pages แคช 10 นาทีหลังแอดมินบันทึก -->
+<script>document.write('<script src="content.js?t='+Math.floor(Date.now()/6e4)+'"><\/script>')</script>
+<script>
+// ?preview = ดูร่างจากหน้าแอดมินก่อนบันทึกจริง (เก็บใน localStorage ของเครื่องนี้) · รูปที่ยังไม่อัปขึ้น = data URI ใน pending
+if(/[?&]preview\b/.test(location.search)) try{ const d=JSON.parse(localStorage.getItem('zonemap-draft')||'null');
+  if(d&&d.content){ window.CONTENT=d.content; window.ASSETS=Object.assign(window.ASSETS||{},d.pending||{}); } }catch(e){ console.warn('อ่านร่างไม่ได้',e); }
+</script>
 <script>
 // ══ ข้อมูลโซน ══
 // ASSETS (assets.js) = โมเดล/โลโก้ฝังในไฟล์ · ไม่มี = โหลดจากโฟลเดอร์ (ต้องเปิดผ่านเซิร์ฟเวอร์)
 const A=p=>(window.ASSETS&&ASSETS[p])||p;
-// ฤดูราคา: low = 13 เม.ย.–31 ต.ค. · high = 1 พ.ย.–12 เม.ย. · [จ.–พฤ., ศ.–อา.] บาท/ล็อก/วัน จองผ่านแอป
-const SEASON={low:'13 เม.ย. – 31 ต.ค.',high:'1 พ.ย. – 12 เม.ย.'};
-// รหัสล็อก ↔ จุดขาย จากตารางราคาบนเว็บ (รูป "ค่าเช่า-โซนสตรีทฟู้ด") · Lotus = ชื่อร้านเดิมในเว็บ
-const FOOD_T=[{codes:'TA01–46 · TB01–43 <small>หน้าอาคาร ฝั่ง 7-11</small><br>TD–TN <small>กลางถนน ไม่มีหลังคา</small><br>FA <small>เปิดท้ายขายอาหาร</small>',low:[110,140],high:[130,160]},
-              {codes:'TA47–71 · TB45–71 <small>หน้าอาคาร ฝั่ง Lotus เดิม</small>',low:[55,70],high:[65,80]}];
-const BOOT_T=[{codes:'โซน S <small>จอง 13:00 · ไม่มี VIP</small>',low:[160,210],high:[210,260]},
-              {codes:'โซน U–Z <small>VIP 12:00 · ทั่วไป 13:00</small>',low:[210,260],high:[260,310]},
-              {codes:'โซน R ?',low:[200,250],high:[200,250]}];
-const ELEC='200 วัตต์แรก 30 ฿ <small>+10 ฿ ทุก 100 วัตต์</small>';
-// ok / no = ไอคอนขายได้ / ห้ามขาย [อีโมจิ, ป้าย] · ใส่เฉพาะที่เว็บตลาดเขียนไว้ (หรือเจ้าของแจ้ง) · noTo = ไปขายที่ไหนแทน
-// steps = วิธีจอง [หัวข้อ, รายละเอียด] · rules / refund = ข้อย่อยในหัวข้อพับได้ · facts = กล่องข้อมูลสั้น [อีโมจิ, ป้าย, ค่า]
-const HOT=[['🍤','ทอด'],['🍢','ปิ้ง'],['🍖','ย่าง']];
-const FOOD={kind:'food',tiers:FOOD_T,size:'โต๊ะ 75 × 75 ซม.',sell:'ทอด · ปิ้ง · ย่าง · ของหวาน',
-  ok:[...HOT,['🍧','ของหวาน']],
-  facts:[['📐','ขนาดล็อก','โต๊ะ 75 × 75 ซม.'],['🔢','จองได้','หลายล็อก']],
-  steps:[['จองในแอป SAVEONE','12:00–15:00 ? · จองวันนี้ ขายพรุ่งนี้ · ราคาคิดตามวันที่จอง'],
-         ['หรือจองที่เคาน์เตอร์สำนักงาน','15:00–18:00 · ขายวันเดียวกัน · เฉพาะล็อกที่เหลือ · +30 บาท/ล็อก']],
-  rules:['ตลาดมีโต๊ะให้ · นำมาเองต้องขนาด 75 × 75 ซม.','จองได้หลายล็อก'],
-  refund:['เฉพาะจองผ่านแอป · คืนเป็นยอดคงเหลือ','ได้ล็อกไม่ตรงโซนที่เลือก ยกเลิกก่อน 15:00 → คืน 100%','ฝนตกก่อน 19:30 จนขายไม่ได้ → คืน 50%'],
-  tel:'044-222-588 · 044-299-169',ask:'แอปปิดจอง 15:00 หรือ 15:30 เว็บเขียนไม่ตรงกัน',
-  ig:'saveonefood',model:'tent',lot:'75 × 75 ซม.',m2:'0.56 ตร.ม.',add:30};
-const BOOT={kind:'boot',tiers:BOOT_T,size:'ที่ขาย 2.4 × 3.5 ม. · รวมที่จอด 2.4 × 8 ม.',
-  sell:'เสื้อผ้า · กระเป๋า · รองเท้า · นาฬิกา · แว่น · แฮนด์เมด · ตุ๊กตา · น้ำหอม · มือสอง',
-  ok:[['👕','เสื้อผ้า'],['👜','กระเป๋า'],['👟','รองเท้า'],['⌚','นาฬิกา'],['🕶️','แว่น'],['🧶','แฮนด์เมด'],['🧸','ตุ๊กตา'],['🌸','น้ำหอม'],['♻️','มือสอง']],
-  no:[['💊','ของผิดกฎหมาย'],['🐶','สัตว์เลี้ยง'],['🗡️','อาวุธ']], // เจ้าของแจ้ง 24 ต.ค. 69 · ไม่มีบนเว็บ
-  facts:[['📐','ขนาดล็อก','ขาย 2.4 × 3.5 ม. <small>รวมที่จอด 2.4 × 8 ม.</small>'],['🔢','จองได้','ไม่เกิน 4 ล็อก']],
-  steps:[['จองในแอป SAVEONE','โซน U–Z: VIP 12:00 · ทั่วไป 13:00 · โซน S: 13:00 ไม่มี VIP · ปิด 15:00'],
-         ['หรือจองที่เคาน์เตอร์สำนักงาน','15:00–18:00 · +50 บาท/ล็อก · ลูกค้าใหม่ใช้บัตรประชาชนรับบัตรคิว ตั้งแต่ 15:30'],
-         ['มาตั้งร้าน','ล็อกสุ่มใหม่ทุกวัน ดูเลขล็อกในแอป · จอดรถในล็อก']],
-  rules:['ไม่ใช่ล็อกประจำ สุ่มล็อกใหม่ทุกวัน','จองได้ไม่เกิน 4 ล็อก','ต้องจอดรถในล็อกอย่างน้อย 1 คัน · รถอยู่ในส่วน 4.5 ม. ของล็อก','จอง 3–4 ล็อก จอดรถแนวขวางได้','ใช้ไฟต้องแจ้งตอนจองทุกครั้ง'],
-  refund:['เฉพาะจองผ่านแอป · คืนเป็นยอดคงเหลือ','โซน U–Z ยกเลิกก่อน 15:00 → คืน 50%','ฝนตกก่อน 19:30 จนขายไม่ได้ → คืน 50%'],
-  tel:'044-222-588 · 044-300-555',ask:'VIP คืออะไร สมัครยังไง ยังไม่มีข้อมูล · ข้อห้ามยังรอยืนยัน',
-  ig:'saveonecarboot',model:'car',lot:'2.4 × 3.5 ม.',m2:'8.4 ตร.ม.',add:50};
-const ZONES=[
-  {...FOOD,id:'food-sf1',name:'สตรีทฟู้ด ฝั่งเซเว่น',where:'ริมกำแพงซ้าย ข้าง 7-11 / ZEED BBQ'},
-  {...FOOD,id:'food-sf2',name:'สตรีทฟู้ด หลังคาสูง',where:'ใต้หลังคาสูง ใกล้ Swensen\'s · ติด J.M. Steel'},
-  {...FOOD,id:'food-in',name:'ศูนย์อาหาร',where:'อาคารศูนย์อาหาร ติดสำนักงานตลาด',model:'kiosk',sell:'เฉพาะอาหารที่ไม่ปรุงด้วยความร้อน (ปิ้ง/ย่าง/ทอด ขายหน้าอาคาร)',
-   ok:[['❄️','ไม่ใช้ความร้อน']],no:[['🔥💨','ปิ้ง ย่าง ทอด']],noTo:'ขายหน้าอาคาร'},
-  {...BOOT,id:'boot-a',name:'เปิดท้าย ข้าง J.M. Steel',where:'แนวยาวข้าง J.M. Steel ฝั่ง Makro'},
-  {...BOOT,id:'boot-b',name:'เปิดท้าย ลานใหญ่',where:'ลานด้านในสุด เลยหลังคาสูงลงไป'},
-  {kind:'event',id:'event',name:'ลานกิจกรรม หน้าธนาคาร',model:'stage',where:'ลานจอดรถหน้าธนาคารไทยพาณิชย์ ติดถนนมิตรภาพ',
-   size:'ใช้ทั้งลานหรือบางส่วน ตามงาน',sell:'งานสตรีทฟู้ด · คอนเสิร์ต · กิจกรรมแบรนด์ · มีวัน Setup ก่อนงานได้',
-   ok:[['🍢','สตรีทฟู้ด'],['🎤','คอนเสิร์ต'],['🏷️','งานแบรนด์']],
-   tel:'044-222-588 · 044-300-555',past:'KFC Drive Thru · Chang Carnival · Saveone Meeting Bike'},
-  {kind:'park',model:'park',id:'park-1',name:'ลานจอด ข้าง ZEED BBQ',where:'หลัง 7-11 / ZEED BBQ',near:'สตรีทฟู้ด ฝั่งเซเว่น · ศูนย์อาหาร'},
-  {kind:'park',model:'park',id:'park-2',name:'ลานจอด นอกกำแพงซ้าย',where:'นอกกำแพงฝั่งซ้าย ข้างศูนย์อาหาร',near:'ศูนย์อาหาร · สำนักงาน'},
-  {kind:'park',model:'park',id:'park-3',name:'ลานจอด ข้าง Autobacs',where:'ระหว่าง Autobacs กับเปิดท้ายข้าง J.M. Steel',near:'เปิดท้าย ข้าง J.M. Steel'},
-  {kind:'park',model:'park',id:'park-4',name:'ลานจอด ฝั่ง Makro',where:'ลานใหญ่ฝั่ง Makro หลังแนวแบ่ง',near:'เปิดท้าย ข้าง J.M. Steel · Makro'},
-  {kind:'park',model:'park',id:'park-5',name:'ลานจอด ท้ายตลาด',where:'ใต้ลานเปิดท้ายใหญ่ สุดตลาด',near:'เปิดท้าย ลานใหญ่'}
-];
+// ข้อความทั้งหมดอยู่ใน content.js (แก้ผ่าน admin.html ได้) · ที่นี่เก็บแค่ผัง/ตรรกะ
+const C=window.CONTENT;
+const SEASON=C.season, ELEC=C.elec, KIND=C.kinds;
+// โซนอาหาร/เปิดท้ายสืบค่าจากกลุ่ม (ราคา วิธีจอง ฯลฯ) · ช่องที่โซนใส่เอง = ทับของกลุ่ม · ฤดูราคา low/high = [จ.–พฤ., ศ.–อา.] บาท/ล็อก/วัน
+const ZONES=C.zones.map(z=>({...(C.groups[z.group]||{}),...z}));
 const byId=Object.fromEntries(ZONES.map(z=>[z.id,z]));
-// หมวดตามเว็บตลาด: ขายอาหาร · ขายสินค้า · ขายบริการ · ลานกิจกรรม — บริการยังไม่มีข้อมูลตำแหน่ง/ราคา (เจ้าของ 24 ต.ค. 69: จดไว้ก่อน ยังไม่ใส่)
-const KIND={food:'ขายอาหาร',boot:'ขายสินค้า · เปิดท้าย',event:'ลานกิจกรรม',park:'ที่จอดรถ'};
+// ข้อความจากแอดมิน: กันแท็ก HTML · [ข้อความ] = ตัวเล็กสีเทา · ขึ้นบรรทัดใหม่ = <br>
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rt=s=>esc(s).replace(/\[([^\]\n]*)\]/g,'<small>$1</small>').replace(/\n/g,'<br>');
 
 // ══ ผัง (พิกัด = พิกัดแผนที่ตลาด 28 ส.ค. 69 · y = ทิศใต้) ══
 const R=(x,y,w,d)=>[[x,y],[x+w,y],[x+w,y+d],[x,y+d]];
@@ -420,7 +372,9 @@ const BLD=[
   {b:[[1400,90],[1510,86],[1470,502],[1362,488]],h:38,roof:'#cdd4dc'},
   {b:[[1510,86],[1715,79],[1680,407],[1480,380]],h:50,roof:'#eceef0',sign:'#d7262f',ac:[[1560,130],[1650,125],[1600,320],[1540,345]]},
   {b:[[792,760],[832,762],[806,1190],[764,1188]],h:14,roof:'#c7ced6'},
-  {b:[[985,1248],[1080,1250],[1062,1392],[972,1388]],h:22}
+  {b:[[985,1248],[1080,1250],[1062,1392],[972,1388]],h:22},
+  {b:R(676,348,29,98),h:16,roof:'#b4bac2'},                 // ตึกเล็กข้างธนาคาร: ห้องน้ำ + ไปรษณีย์ไทย
+  {b:R(764,1252,19,70),h:12,roof:'#5b6169'}                 // ห้องน้ำ ลานจอดท้ายตลาด
 ];
 // ป้ายชื่อ [x, y, สูง, ข้อความ, ชนิด, โซน]
 const LBL=[
@@ -433,10 +387,14 @@ const LBL=[
 // โลโก้บนหลังคา (ตัดจากแผนที่ตลาด 28 ส.ค. 69 · โฟลเดอร์ logos/) [ไฟล์, x, y, กว้าง, สูงหลังคา, มุมขอบตึก]
 const ROOF_LOGO=[['bbl',432,170,34,30],['kbank',482,170,34,30],['dms',570,163,44,28],['studio7',620,163,44,28],['starbucks',710,163,48,28],
   ['banana',806,156,38,30,-.047],['pizzahut',852,154,34,30,-.047],['kfc',896,152,34,30,-.047],['jetts',944,150,40,30,-.047],
-  ['autobacs',1236,146,72,26],['makro',1597,236,160,50,-.034],['zeed',460,226,56,24],['711',460,264,30,24],['chiwlao',598,232,32,22],['wishco',762,504,118,18],['swensens',897,492,58,20]];
+  ['autobacs',1236,146,72,26],['makro',1597,236,160,50,-.034],['zeed',460,226,56,24],['711',460,264,30,24],['chiwlao',598,232,32,22],['wishco',762,504,118,18],['swensens',897,492,58,20],
+  ['mrdiy',650,330,30,24],['shabuzeed',598,305,30,22],['mixue',598,379,22,22],['dq',658,433,12,24],['thaipost',691,430,18,16],
+  ['watsons',454,623,62,20],['lotus',454,635,62,20],['ktb',448,648,50,20]];
 // ร้าน/จุดที่ไม่มีโลโก้ในผัง = ป้ายวาดเอง [บรรทัด, x, y, กว้าง, สูงหลังคา, พื้น, ตัวอักษร]
 const ROOF_TXT=[[['📍 สำนักงาน','จองที่นี่'],550,636,54,20,'#f6cf45','#2b2f35'],[['SCB','ไทยพาณิชย์'],726,240,40,26,'#4e2a84','#ffffff'],
-  [['J.M. Steel'],1112,300,74,46,'#1f4e8c','#ffffff'],[['ถ.มิตรภาพ'],640,92,90,-.2,null,'rgba(255,255,255,.85)']];
+  [['J.M. Steel'],1112,300,74,46,'#1f4e8c','#ffffff'],[['ถ.มิตรภาพ'],640,92,90,-.2,null,'rgba(255,255,255,.85)'],
+  // ห้องน้ำ 5 จุด ตามแผนที่ตลาด · ป้ายที่กว้างเกินตึก ยกสูงกว่าขอบหลังคา (+3.5) ไม่ให้ขอบบัง
+  ...[[1028,317,32,16],[640,276,34,24],[690,377,28,16],[509,635,30,23.5],[773,1287,28,15.5]].map(([x,y,w,h])=>[['🚻 ห้องน้ำ'],x,y,w,h,'#2f6fd6','#ffffff'])];
 
 // ══ ราคา ══
 const now=new Date(), md=(now.getMonth()+1)*100+now.getDate();
@@ -444,18 +402,14 @@ const season=(md>=413&&md<=1031)?'low':'high', other=season==='low'?'high':'low'
 const wk=[5,6,0].includes(now.getDay())?1:0, dayTxt=wk?'ศ.–อา.':'จ.–พฤ.';
 const range=z=>{ if(!z.tiers) return null; const v=z.tiers.map(t=>t[season][wk]), a=Math.min(...v), b=Math.max(...v); return a===b?`${a}`:`${a}–${b}`; };
 const yearRange=z=>{ const v=z.tiers.flatMap(t=>[...t.low,...t.high]); return `${Math.min(...v)}–${Math.max(...v)}`; };
-const table=(z,s)=>`<p class="tt">${SEASON[s]}${s===season?' · ตอนนี้':''}</p><table><thead><tr><th>รหัสล็อก</th><th>จ.–พฤ.</th><th>ศ.–อา.</th></tr></thead><tbody>${
-  z.tiers.map(t=>`<tr${s===season?' class="cur"':''}><td>${t.codes}</td><td><b>${t[s][0]}</b></td><td><b>${t[s][1]}</b></td></tr>`).join('')}</tbody></table>`;
+const table=(z,s)=>`<p class="tt">${esc(SEASON[s])}${s===season?' · ตอนนี้':''}</p><table><thead><tr><th>รหัสล็อก</th><th>จ.–พฤ.</th><th>ศ.–อา.</th></tr></thead><tbody>${
+  z.tiers.map(t=>`<tr${s===season?' class="cur"':''}><td>${rt(t.codes)}</td><td><b>${esc(t[s][0])}</b></td><td><b>${esc(t[s][1])}</b></td></tr>`).join('')}</tbody></table>`;
 
 // ══ รูปจริง + ภาพอธิบายล็อก ══
-// รูปถ่ายจากหน้าเว็บ "มาขาย" ของตลาด (ย่อไว้ใน photos/) · เป็นภาพตัวอย่างของหมวด ไม่ใช่โซนนั้นเป๊ะ
-const PH={food:[['food-front','หน้าอาคารศูนย์อาหาร'],['food-road','กลางถนน · ไม่มีหลังคา'],['food-2lot','ร้านจอง 2 ล็อก'],['food-3lot','ร้านจอง 3 ล็อก'],['food-grill','ปิ้ง ย่าง'],['food-night','ช่วงค่ำ']],
-  'food-in':[['food-inside','ในอาคารศูนย์อาหาร'],['food-front','ปิ้ง ย่าง ทอด → หน้าอาคาร']],
-  boot:[['boot-aerial','ลานเปิดท้ายมุมสูง'],['boot-crowd','ร้านเปิดท้าย'],['boot-clothes','เสื้อผ้า'],['boot-shoes','รองเท้า'],['boot-glasses','แว่นตา'],['boot-accessory','เครื่องประดับ']],
-  event:[['event-concert','คอนเสิร์ตบนลาน'],['event-aerial','งานบนลาน มุมสูง']]};
-const photos=z=>{ const a=PH[z.id]||PH[z.kind]; if(!a) return '';
+// รูป = [ที่อยู่ไฟล์, คำบรรยาย] ใน content.js (กลุ่มหรือโซน) · รูปเดิมจากหน้าเว็บ "มาขาย" ของตลาด เป็นภาพตัวอย่างของหมวด ไม่ใช่โซนนั้นเป๊ะ
+const photos=z=>{ const a=z.photos; if(!a||!a.length) return '';
   return `<div class="sec"><p class="sec-h">📷 บรรยากาศจริง <small style="font-weight:400;color:var(--mute)">· แตะดูใหญ่</small></p><div class="photos">${
-    a.map(([f,c])=>`<figure data-c="${c}"><img src="${A('photos/'+f+'.jpg')}" alt="${c}" loading="lazy"><figcaption>${c}</figcaption></figure>`).join('')}</div></div>`; };
+    a.map(([f,c])=>`<figure data-c="${esc(c)}"><img src="${esc(A(f))}" alt="${esc(c)}" loading="lazy"><figcaption>${esc(c)}</figcaption></figure>`).join('')}</div></div>`; };
 // ภาพจัดล็อก = เรนเดอร์จาก Blender (blender/lot-guide.py) · ป้ายวางตามตำแหน่ง x จริง: (กลางกลุ่ม − ขอบซ้ายกรอบ) ÷ กว้างกรอบ
 // อาหาร กรอบ −0.8…7.45 ม. · เปิดท้ายแนวตั้ง −1…10.2 · แนวนอน −1…19.8 (ตรงกับ FOOD_FRAME / BOOT_*_FRAME ในสคริปต์)
 const shot=(f,alt,caps)=>`<figure class="lot"><img src="${A('photos/lot-'+f+'.jpg')}" alt="${alt}"><div class="caps">${
@@ -472,38 +426,41 @@ let sel=null, filt='all';
 const mark=id=>document.querySelectorAll('.lb.zone,.card,.zg,.pill[data-id]').forEach(e=>e.classList.toggle('sel',e.dataset.id===id));
 const AREA_NOTE='<p class="note">พื้นที่ ≈ คำนวณจากผัง เทียบพื้นที่ตลาดรวม 88 ไร่</p>';
 const EMPTY='<div class="empty"><b>👆</b>แตะโซนบนผัง หรือเลือกจาก "ทุกโซน" ด้านล่าง<br>เพื่อดูว่าขายอะไรได้ ราคา และวิธีจอง</div>';
-const tiles=(a,c)=>`<div class="icons">${a.map(([e,t])=>`<div class="ic ${c}"><i aria-hidden="true">${e}</i><span>${t}</span></div>`).join('')}</div>`;
-const can=z=>`<p class="can-h ok">✅ ขายได้</p>${tiles(z.ok,'ok')}${z.no?`<p class="can-h no">🚫 ห้ามขาย${z.noTo?` <small>→ ${z.noTo}</small>`:''}</p>${tiles(z.no,'no')}`:''}`;
+const tiles=(a,c)=>`<div class="icons">${a.map(([e,t])=>`<div class="ic ${c}"><i aria-hidden="true">${esc(e)}</i><span>${rt(t)}</span></div>`).join('')}</div>`;
+const can=z=>`<p class="can-h ok">✅ ขายได้</p>${tiles(z.ok,'ok')}${z.no&&z.no.length?`<p class="can-h no">🚫 ห้ามขาย${z.noTo?` <small>→ ${esc(z.noTo)}</small>`:''}</p>${tiles(z.no,'no')}`:''}`;
 // ชิ้นส่วนแผง: หัว · กล่องข้อมูลสั้น · ขั้นตอน · หัวข้อพับได้ · ปุ่มโทร
-const head=z=>`<span class="tag ${z.kind}">${KIND[z.kind]}</span><h2>${z.name}</h2><p class="where">📍 ${z.where}</p>`;
-const facts=a=>`<div class="sec facts">${a.map(([e,k,v,w])=>`<div class="fact${w?' w':''}"><small>${e} ${k}</small><b>${v}</b></div>`).join('')}</div>`;
-const flow=a=>`<div class="sec"><p class="sec-h">วิธีจอง</p><ol class="flow">${a.map(([t,d])=>`<li><div><b>${t}</b><span>${d}</span></div></li>`).join('')}</ol></div>`;
-const acc=a=>`<div class="acc">${a.map(([t,body])=>`<details><summary>${t}</summary>${Array.isArray(body)?`<ul>${body.map(x=>`<li>${x}</li>`).join('')}</ul>`:`<div class="db">${body}</div>`}</details>`).join('')}</div>`;
-const calls=(tel,ig)=>{ const [t1,t2]=tel.split(' · ');
-  return `<div class="actions"><a class="btn pri" href="tel:${t1.replace(/-/g,'')}">📞 ${t1}</a>${ig?`<a class="btn" href="https://www.instagram.com/${ig}/" target="_blank" rel="noopener">IG โซน</a>`:t2?`<a class="btn" href="tel:${t2.replace(/-/g,'')}">📞 ${t2}</a>`:''}</div>`; };
+// facts: [อีโมจิ, ป้าย, ค่า, เต็มแถว] · ค่าที่โค้ดคำนวณเอง (พื้นที่) ส่งเป็น HTML ผ่าน {h:...}
+const head=z=>`<span class="tag ${z.kind}">${esc(KIND[z.kind])}</span><h2>${esc(z.name)}</h2><p class="where">📍 ${esc(z.where)}</p>`;
+const facts=a=>`<div class="sec facts">${a.map(([e,k,v,w])=>`<div class="fact${w?' w':''}"><small>${esc(e)} ${esc(k)}</small><b>${v&&v.h!=null?v.h:rt(v)}</b></div>`).join('')}</div>`;
+const flow=a=>`<div class="sec"><p class="sec-h">วิธีจอง</p><ol class="flow">${a.map(([t,d])=>`<li><div><b>${rt(t)}</b><span>${rt(d)}</span></div></li>`).join('')}</ol></div>`;
+const acc=a=>`<div class="acc">${a.filter(([,b])=>b&&b.length).map(([t,body])=>`<details><summary>${t}</summary>${Array.isArray(body)?`<ul>${body.map(x=>`<li>${rt(x)}</li>`).join('')}</ul>`:`<div class="db">${body}</div>`}</details>`).join('')}</div>`;
+const telBtn=(t,c='')=>`<a class="btn${c}" href="tel:${esc(String(t).replace(/[^\d+]/g,''))}">📞 ${esc(t)}</a>`;
+const calls=(tel=[],ig)=>{ const [t1,t2]=tel; if(!t1) return '';
+  return `<div class="actions">${telBtn(t1,' pri')}${ig?`<a class="btn" href="https://www.instagram.com/${encodeURIComponent(ig)}/" target="_blank" rel="noopener">IG โซน</a>`:t2?telBtn(t2):''}</div>`; };
+const warn=z=>z.warn?`<p class="warn">${rt(z.warn)}</p>`:'';
 function panel(z){
   const P_=document.getElementById('panel'); P_.scrollTop=0;
   if(z.kind==='park'){ P_.innerHTML=`${head(z)}
     <div class="sec today park"><small>จอดฟรี · ได้ประมาณ</small><b>${slots(z.id).length.toLocaleString('th-TH')}</b> <span class="u">คัน</span></div>
-    ${facts([['🚗','ช่องจอด','2.5 × 5 ม.'],['🕙','เวลา','10:00–23:00 ?'],['🧭','ใกล้','<small style="font-size:14px">'+z.near+'</small>',1],['🗺️','พื้นที่',fmtM2(zoneM2(z.id)),1]])}
+    ${facts([['🚗','ช่องจอด','2.5 × 5 ม.'],['🕙','เวลา',z.hours||'—'],['🧭','ใกล้',z.near||'—',1],['🗺️','พื้นที่',{h:fmtM2(zoneM2(z.id))},1]])}
     <p class="warn">? จำนวนคันนับช่องจากผัง</p>${AREA_NOTE}`; return; }
   if(z.kind==='event'){ P_.innerHTML=`${head(z)}<div class="sec">${can(z)}</div>
-    <div class="sec today event"><small>ราคา</small><b style="font-size:28px">ตามงาน</b> <span class="u">· สอบถามสำนักงาน</span></div>
+    <div class="sec today event"><small>ราคา</small><b style="font-size:28px">${esc(z.price)}</b> <span class="u">${z.priceNote?'· '+esc(z.priceNote):''}</span></div>
     ${photos(z)}
-    ${facts([['📐','ขนาด','ทั้งลานหรือบางส่วน'],['🛠️','วัน Setup','ก่อนงานได้'],['🏆','เคยจัด',z.past,1],['🗺️','พื้นที่',fmtM2(zoneM2(z.id)),1]])}
+    ${facts([...(z.facts||[]),['🗺️','พื้นที่',{h:fmtM2(zoneM2(z.id))},1]])}
     ${calls(z.tel)}
-    <p class="warn">? ปกติเป็นลานจอดรถ · ชื่อลานบนเว็บเดิม (ไทมุง / หน้าทาวเวอร์ / น้ำพุม้า) ยังไม่รู้ว่าตรงกับลานนี้ไหม</p>${AREA_NOTE}`; return; }
-  const area=z.kind==='boot'?['🗺️','ล็อกตามผัง',`≈ ${slots(z.id).length} ล็อก`]:['🗺️','พื้นที่โซน',fmtM2(zoneM2(z.id))];
+    ${warn(z)}${AREA_NOTE}`; return; }
+  const area=z.kind==='boot'?['🗺️','ล็อกตามผัง',{h:`≈ ${slots(z.id).length} ล็อก`}]:['🗺️','พื้นที่โซน',{h:fmtM2(zoneM2(z.id))}];
   P_.innerHTML=`${head(z)}<div class="sec">${can(z)}</div>
     <div class="sec today ${z.kind}"><small>ราคาวันนี้ · ${dayTxt} · จองผ่านแอป</small><b>${range(z)}</b> <span class="u">บาท/ล็อก/วัน</span>
-      <small class="sub">รวมค่าส่วนกลาง 10 บาท (ห้องน้ำ รถรับส่ง เก็บขยะ ไฟส่องสว่าง รปภ.)</small></div>
+      ${C.feeNote?`<small class="sub">${rt(C.feeNote)}</small>`:''}</div>
     ${photos(z)}
     ${facts([...z.facts,['⚡','ไฟฟ้า',ELEC],area])}
     ${diagram(z)}
     ${flow(z.steps)}
     ${acc([['📋 เงื่อนไข',z.rules],['💸 คืนเงิน',z.refund],['🗓️ ราคาทั้งปี',table(z,season)+table(z,other)]])}
     ${calls(z.tel,z.ig)}
-    <p class="warn">? รหัสล็อกไหนอยู่โซนนี้ ยังรอยืนยัน · ${z.ask}</p>${AREA_NOTE}`;
+    ${warn(z)}${AREA_NOTE}`;
 }
 function show(id,fromMap){
   sel=id; const z=byId[id]; mark(id); panel(z);
@@ -799,14 +756,14 @@ function openHolo(z){
   const tag=document.getElementById('holoTag'); tag.className='holo-tag '+z.kind;
   tag.innerHTML=z.kind==='food'?'<i></i>ล็อก = โต๊ะ 75 × 75 ซม.':z.kind==='boot'?'<i></i>ที่ขาย 2.4 × 3.5 ม. · เส้นจาง = รวมที่จอด 2.4 × 8 ม.':z.kind==='park'?'<i></i>ช่องจอด 2.5 × 5 ม. · นับช่องจากผัง':'<i></i>ลานกว้าง ใช้ทั้งลานหรือบางส่วน';
   if(z.kind==='park') document.getElementById('holoSub').textContent='ตัวอย่างช่องจอด';
-  const ic=e=>e.map(([x,t])=>`<b title="${t}">${x}</b>`).join(''), hi=document.getElementById('holoIc');
-  hi.innerHTML=z.ok?`<div>✅ ขายได้ ${ic(z.ok)}</div>${z.no?`<div>🚫 ห้าม ${z.no.map(([x,t])=>`<b class="no" title="ห้าม${t}">${x}</b>`).join('')}</div>`:''}`:'';
+  const ic=e=>e.map(([x,t])=>`<b title="${esc(t)}">${esc(x)}</b>`).join(''), hi=document.getElementById('holoIc');
+  hi.innerHTML=z.ok?`<div>✅ ขายได้ ${ic(z.ok)}</div>${z.no&&z.no.length?`<div>🚫 ห้าม ${z.no.map(([x,t])=>`<b class="no" title="ห้าม${esc(t)}">${esc(x)}</b>`).join('')}</div>`:''}`:'';
   hi.hidden=!z.ok;
   document.getElementById('holoS').innerHTML=z.kind==='park'
     ?`<div><small>ช่องจอด</small><b>2.5 × 5 ม.</b></div><div><small>พื้นที่</small><b>${zoneM2(z.id).toLocaleString('th-TH')} ตร.ม.</b></div><div><small>จอดได้ ≈ (คัน)</small><b class="big">${slots(z.id).length.toLocaleString('th-TH')}</b></div><div><small>ค่าจอด</small><b>ฟรี</b></div>`
     :ev
-    ?`<div><small>ขนาด</small><b>ตามงาน</b></div><div><small>ราคา</small><b class="big">สอบถาม</b></div><div><small>มีวัน Setup</small><b>ได้</b></div><div><small>โทร</small><b>044-222-588</b></div>`
-    :`<div><small>ขนาดล็อก</small><b>${z.lot}</b></div><div><small>พื้นที่</small><b>${z.m2}</b></div><div><small>วันนี้ (${dayTxt})</small><b class="big">${range(z)} ฿</b></div><div><small>ทั้งปี / ล็อก / วัน</small><b>${yearRange(z)} ฿</b></div>`;
+    ?`<div><small>ขนาด</small><b>ตามงาน</b></div><div><small>ราคา</small><b class="big">${esc(z.price)}</b></div><div><small>มีวัน Setup</small><b>ได้</b></div><div><small>โทร</small><b>${esc((z.tel||[])[0]||'—')}</b></div>`
+    :`<div><small>ขนาดล็อก</small><b>${esc(z.lot)}</b></div><div><small>พื้นที่</small><b>${esc(z.m2)}</b></div><div><small>วันนี้ (${dayTxt})</small><b class="big">${range(z)} ฿</b></div><div><small>ทั้งปี / ล็อก / วัน</small><b>${yearRange(z)} ฿</b></div>`;
   card.classList.add('on'); card.setAttribute('aria-hidden','false');
   if(!window.THREE) return;
   stopHolo(); buildHolo(z);
@@ -977,8 +934,13 @@ function fallback(err){ if(err) console.warn('ผัง 3 มิติเปิ�
   const l=document.getElementById('loading'); if(l) l.remove(); document.getElementById('stage').classList.add('flat'); buildFlat(); }
 
 // ══ เริ่ม ══
+{ const S=C.site, $=id=>document.getElementById(id), tx=(id,v)=>{ $(id).textContent=v||''; $(id).hidden=!v; };
+  tx('sEyebrow',S.eyebrow); tx('sTitle',S.title); tx('sSub',S.subtitle); tx('sDraft',S.draft); tx('sFirstNote',S.firstNote); tx('sFooter',S.footer);
+  $('sFirst').innerHTML=(S.firstSteps||[]).map(([t,d])=>`<li><div><b>${rt(t)}</b><span>${rt(d)}</span></div></li>`).join('');
+  $('sCalls').innerHTML=(S.calls||[]).map(([t,l])=>telBtn(t).replace('</a>',`<small>${esc(l)}</small></a>`)).join('');
+  $('sOffice').innerHTML=(S.office||[]).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${rt(v)}</dd>`).join(''); }
 document.getElementById('list').innerHTML=ZONES.map(z=>`<button type="button" class="card ${z.kind}" data-id="${z.id}" data-kind="${z.kind}">
-  <b>${z.name}</b><small>${z.kind==='park'?fmtM2(zoneM2(z.id)):z.lot?'ล็อก '+z.lot:z.size}</small><div class="p">${z.kind==='event'?'ราคาตามงาน · สอบถาม':z.kind==='park'?`จอดฟรี ≈ ${slots(z.id).length.toLocaleString('th-TH')} คัน`:`วันนี้ ${range(z)} ฿`}</div></button>`).join('');
+  <b>${esc(z.name)}</b><small>${z.kind==='park'?fmtM2(zoneM2(z.id)):esc(z.lot?'ล็อก '+z.lot:z.size)}</small><div class="p">${z.kind==='event'?'ราคา'+esc(z.price)+' · สอบถาม':z.kind==='park'?`จอดฟรี ≈ ${slots(z.id).length.toLocaleString('th-TH')} คัน`:`วันนี้ ${range(z)} ฿`}</div></button>`).join('');
 document.querySelectorAll('.card').forEach(c=>c.addEventListener('click',()=>show(c.dataset.id)));
 document.getElementById('panel').innerHTML=EMPTY;
 // แตะรูป = ดูใหญ่ · แตะอีกครั้ง / Esc = ปิด

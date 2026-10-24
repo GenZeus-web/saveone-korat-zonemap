@@ -1,5 +1,6 @@
 # ภาพอธิบายการจัดล็อก (แทนรูปข้อมูลบนเว็บตลาด · วาดใหม่เป็นแบบของเรา)
-# รัน: "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b --factory-startup -P blender\lot-guide.py -- [food|boot-v|boot-h|all]
+# รัน: "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b --factory-startup -P blender\lot-guide.py -- [food|boot-v|boot-h|all|ar]
+# ar = ส่งออก models/ar/lot-boot-1..4.glb + lot-food-1..4.glb ขนาดจริง (ไม่เรนเดอร์)
 # ได้: photos/lot-food.jpg · photos/lot-boot-v.jpg · photos/lot-boot-h.jpg (ฝังในไฟล์เดียวผ่าน build-assets.py)
 # หน่วย = เมตร · x = ขวา · y = ลึกเข้าไป (กล้องมองจากทิศใต้ เอียงลง) · ป้ายภาษาไทยวางใน HTML ตามพิกัด FRAME ข้างล่าง
 import bpy, math, os, sys
@@ -28,7 +29,7 @@ def cyl(r, h, loc, m, rot=(0, 0, 0), v=16):
     bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=h, location=loc, rotation=rot, vertices=v); o = bpy.context.object
     bpy.ops.object.shade_smooth(); o.data.materials.append(m); return o
 
-def glb(path, length=None, height=None, loc=(0, 0, 0), rz=0.0):
+def glb(path, length=None, height=None, loc=(0, 0, 0), rz=0.0, dims=None):
     """นำเข้าโมเดล แล้วย่อ/ขยายตามความยาว (แกนยาวสุดแนวราบ) หรือความสูง · วางฐานบนพื้น"""
     before = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=os.path.join(ROOT, path))
     objs = [o for o in bpy.data.objects if o not in before]
@@ -38,10 +39,14 @@ def glb(path, length=None, height=None, loc=(0, 0, 0), rz=0.0):
     bpy.context.view_layer.update()
     pts = [o.matrix_world @ Vector(c) for o in objs if o.type == 'MESH' for c in o.bound_box]
     mn = Vector([min(p[i] for p in pts) for i in range(3)]); mx = Vector([max(p[i] for p in pts) for i in range(3)])
-    s = length / max(mx.x - mn.x, mx.y - mn.y) if length else height / (mx.z - mn.z)
-    root.scale = (s, s, s); root.rotation_euler = (0, 0, rz)
+    d = mx - mn
+    if dims:   # (ยาว, กว้าง, สูง) จริง → ยืดแยกแกน · แกนยาวของโมเดล = แกนราบที่ยาวกว่า
+        L, W, H = dims; sx, sy = (L / d.x, W / d.y) if d.x >= d.y else (W / d.x, L / d.y); s = (sx, sy, H / d.z)
+    else:
+        k = length / max(d.x, d.y) if length else height / d.z; s = (k, k, k)
+    root.scale = s; root.rotation_euler = (0, 0, rz)
     c = (mn + mx) / 2
-    off = Vector((-c.x * s, -c.y * s, -mn.z * s)); off.rotate(root.rotation_euler)
+    off = Vector((-c.x * s[0], -c.y * s[1], -mn.z * s[2])); off.rotate(root.rotation_euler)
     root.location = Vector(loc) + off
     return root
 
@@ -122,7 +127,7 @@ def rack(x, y):
     cyl(.018, 1.44, (x + .7, y, 1.45), P, rot=(0, math.pi / 2, 0), v=8)
     for k, h in enumerate(('#e23b3b', '#2d6fd1', '#f6cf45', '#4fbf86', '#a874e2', '#f27cb4', '#f6f4ef')):
         box((.16, .42, .62), (x + .12 + k * .19, y, 1.08), M(h, .8), .03)
-def lots(gx, n, horiz, car_i):
+def lots(gx, n, horiz, car_i, real=False):
     w = n * LOT_W
     box((w, SELL, .008), (gx + w / 2, SELL / 2, .004), SELLC(), 0)                   # พื้นที่ขาย (ทาสีม่วงอ่อน)
     for e in ((gx, 0, gx + w, 0), (gx, 0, gx, SELL + CAR), (gx + w, 0, gx + w, SELL + CAR), (gx, SELL + CAR, gx + w, SELL + CAR)):
@@ -130,8 +135,12 @@ def lots(gx, n, horiz, car_i):
     for i in range(1, n): stripe((gx + i * LOT_W, 0), (gx + i * LOT_W, SELL + CAR), .05, dash=.35)
     stripe((gx, SELL), (gx + w, SELL), .05, dash=.35)
     stripe((gx, SELL + CAR - .12), (gx + w, SELL + CAR - .12), .08, YEL())          # แนวท้ายล็อก
-    if horiz: glb('models/car/' + ('suv.glb', 'sedan.glb')[car_i % 2], length=4.4, loc=(gx + 2.45, SELL + 2.2, 0), rz=math.pi / 2)
-    else: glb('models/car/' + ('truck.glb', 'van.glb')[car_i % 2], length=4.3, loc=(gx + LOT_W / 2, SELL + CAR / 2, 0), rz=math.pi)
+    if real:    # AR: กระบะขนาดจริง · หัวรถชิดท้ายล็อก ท้ายรถยื่นเข้าที่ขายได้ (เจ้าของ: ประมาณการ ผู้ค้าจัดเอง)
+        L = PICKUP[0]
+        if horiz: car = glb('models/car/truck.glb', dims=PICKUP, loc=(gx + .2 + L / 2, SELL + CAR / 2, 0), rz=math.pi / 2)
+        else: car = glb('models/car/truck.glb', dims=PICKUP, loc=(gx + LOT_W / 2, SELL + CAR - .15 - L / 2, 0), rz=math.pi)
+    elif horiz: car = glb('models/car/' + ('suv.glb', 'sedan.glb')[car_i % 2], length=4.4, loc=(gx + 2.45, SELL + 2.2, 0), rz=math.pi / 2)
+    else: car = glb('models/car/' + ('truck.glb', 'van.glb')[car_i % 2], length=4.3, loc=(gx + LOT_W / 2, SELL + CAR / 2, 0), rz=math.pi)
     # ของในที่ขาย: ราวเสื้อ + โต๊ะ + คนขาย
     rack(gx + .45, 1.5)
     if n > 1:
@@ -140,13 +149,94 @@ def lots(gx, n, horiz, car_i):
         rack(gx + LOT_W + .5, 2.6)
     if n > 2:
         for i in range(2, n): rack(gx + i * LOT_W + .45, 1.5 + (i % 2) * .9)
-    glb(PEOPLE[n % 4], height=1.62, loc=(gx + 1.95, 1.2, 0))
+    if real: person((gx + 1.95, 1.2), '#2d6fd1')
+    else: glb(PEOPLE[n % 4], height=1.62, loc=(gx + 1.95, 1.2, 0))
+    return car
 def build_boot(name, groups, frame, horiz, H):
     sc = scene(); x0, x1 = frame
     ground(x0 - 3, x1 + 3, -4, 12)
     for i, (gx, n) in enumerate(groups): lots(gx, n, horiz, i)
     shoot(sc, name, x0, x1, 3.6, .6, H, tilt=50)
 
+# ── AR: ล็อกตัวอย่าง 1–4 ล็อก ขนาดจริง (เมตร) → models/ar/lot-*.glb · ไม่มีพื้นถนน (วางบนพื้นจริง) · หน้า ar.html ──
+FONT = 'C:/Windows/Fonts/leelawdb.ttf'   # ฟอนต์ติดตัว Blender ไม่มีภาษาไทย · ข้อความต้องไม่มีสระบน/วรรณยุกต์ (Blender ไม่จัดตำแหน่งให้)
+def label(s, loc, size, rz=0.0):
+    """ป้ายนอนบนพื้น: ตัวหนังสือเข้มบนแผ่นขาว อ่านได้จากฝั่ง -y · rz = -90° อ่านจากฝั่ง -x"""
+    cu = bpy.data.curves.new('t', 'FONT'); cu.body = s; cu.font = bpy.data.fonts.load(FONT, check_existing=True)
+    cu.size = size; cu.align_x = 'CENTER'; cu.align_y = 'CENTER'; cu.extrude = .002
+    o = bpy.data.objects.new('t', cu); bpy.context.scene.collection.objects.link(o)
+    o.location = (loc[0], loc[1], .014); o.rotation_euler = (0, 0, rz)
+    bpy.context.view_layer.objects.active = o; o.select_set(True); bpy.ops.object.convert(target='MESH'); o.select_set(False)
+    o.data.materials.append(M('#1d2433', .6)); bpy.context.view_layer.update()
+    box((o.dimensions.x + size * .7, o.dimensions.y + size * .6, .012), (loc[0], loc[1], .006), M('#ffffff', .7), .004, rot=(0, 0, rz))
+PICKUP = (5.3, 1.86, 1.8)   # กระบะ 4 ประตูทั่วไป ยาว × กว้าง × สูง (ม.) · ประมาณจาก Hilux Revo / D-Max
+HUMAN = 1.65
+def rod(a, b, r, m):
+    """ท่อตรงระหว่างจุด a, b บนระนาบ y-z (x เดียวกัน)"""
+    dy, dz = b[1] - a[1], b[2] - a[2]
+    cyl(r, math.hypot(dy, dz), (a[0], (a[1] + b[1]) / 2, (a[2] + b[2]) / 2), m, rot=(math.atan2(-dy, dz), 0, 0), v=8)
+def person(xy, shirt, h=HUMAN):
+    """หุ่นคนสัดส่วนจริง (ราว 7.5 หัว) หันหน้าไป -y · สัดส่วนคิดจากความสูง 1.65 แล้วย่อ/ขยายตาม h"""
+    x, y = xy; k = h / 1.65
+    SKIN, PANT, SHOE, HAIR, SH = M('#c99b77', .7), M('#2c3440', .8), M('#1d1f22', .6), M('#1b1b1d', .9), M(shirt, .8)
+    for s in (-1, 1):
+        box((.1 * k, .26 * k, .07 * k), (x + s * .09 * k, y - .04 * k, .035 * k), SHOE, .02)          # รองเท้า
+        cyl(.055 * k, .41 * k, (x + s * .09 * k, y, .275 * k), PANT)                                # หน้าแข้ง
+        cyl(.075 * k, .42 * k, (x + s * .095 * k, y, .67 * k), PANT)                                # ต้นขา
+        cyl(.045 * k, .3 * k, (x + s * .225 * k, y, 1.22 * k), SH)                                  # ต้นแขน (แขนเสื้อ)
+        cyl(.038 * k, .27 * k, (x + s * .23 * k, y, .935 * k), SKIN)                                # แขนล่าง
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=.045 * k, location=(x + s * .23 * k, y, .78 * k)); bpy.context.object.data.materials.append(SKIN)
+    box((.34 * k, .2 * k, .16 * k), (x, y, .92 * k), PANT, .05 * k)                                  # สะโพก
+    box((.38 * k, .22 * k, .44 * k), (x, y, 1.18 * k), SH, .07 * k)                                  # ลำตัว
+    cyl(.05 * k, .09 * k, (x, y, 1.43 * k), SKIN)                                                    # คอ
+    for r, z, dy, m in ((.105, 1.535, 0, SKIN), (.107, 1.54, .012, HAIR)):   # ยอดผม ≈ h                           # หัว + ผม (ซ้อนเลื่อนหลัง/บน)
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=r * k, location=(x, y + dy * k, z * k)); o = bpy.context.object
+        o.scale = (.85, .95, 1.05); bpy.ops.object.shade_smooth(); o.data.materials.append(m)
+TOPS = [('#f2c230', '#d8322f'), ('#2d6fd1', '#2d6fd1'), ('#4fbf86', '#d8322f'), ('#f2c230', '#2d6fd1')]   # (หน้าโต๊ะ, ขา) ตามรูปตลาด
+def ftable(x, y, i, T=.75, H=.75):
+    """โต๊ะพับ 75 × 75 สูง 75 ซม. · ขาเหล็กไขว้ (X) ซ้าย-ขวา · ของบนโต๊ะเหมือน table()"""
+    top, leg = TOPS[i % 4]; LEG = M(leg, .4, .6)
+    box((T, T, .025), (x + T / 2, y + T / 2, H - .0125), M(top, .5), .004)
+    for sx in (x + .04, x + T - .04):
+        rod((sx, y + .06, .012), (sx, y + T - .06, H - .03), .012, LEG); rod((sx, y + T - .06, .012), (sx, y + .06, H - .03), .012, LEG)   # เริ่ม .012 ไม่จมพื้น
+    cyl(.01, T - .08, (x + T / 2, y + T / 2, (H - .03) / 2), LEG, rot=(0, math.pi / 2, 0), v=8)       # คานกลางเชื่อมสองข้าง
+    goods = [('#f6f4ef', '#e7a443'), ('#2d6fd1', '#f6cf45'), ('#f6f4ef', '#4fbf86')][i % 3]
+    box((.5, .34, .05), (x + T / 2, y + .26, H + .025), M(goods[0], .5), .01)
+    for k in range(4): cyl(.045, .05, (x + .18 + k * .13, y + .26, H + .07), M(goods[1], .55))
+    box((.22, .16, .14), (x + .2, y + .58, H + .07), M('#cfe8f2', .1), .01)
+def export_ar(name):
+    d = os.path.join(ROOT, 'models', 'ar'); os.makedirs(d, exist_ok=True)
+    bpy.ops.export_scene.gltf(filepath=os.path.join(d, 'lot-' + name + '.glb'), export_format='GLB', export_apply=True)
+    print('AR', name)
+def build_ar_boot(n):
+    """n ล็อกติดกัน · 1–2 ล็อกจอดรถแนวตั้ง · 3–4 ล็อกจอดแนวขวาง (เหมือนภาพ boot-v / boot-h)"""
+    scene(); w = LOT_W * n; car = lots(0, n, n >= 3, 0, real=True)
+    if n > 1:   # จองหลายล็อก: ข้างรถจัดร้านได้ (เจ้าของ 24 ต.ค.) → ม่วงทั้งส่วนลึก 4.5 ม. · เทาเฉพาะตรงรถ · ใต้เส้นล็อก (สูง .006)
+        box((w, CAR, .004), (w / 2, SELL + CAR / 2, .002), SELLC(), 0)
+        bpy.context.view_layer.update()
+        pts = [o.matrix_world @ Vector(c) for o in car.children_recursive if o.type == 'MESH' for c in o.bound_box]
+        x0, x1 = max(0, min(p.x for p in pts) - .2), min(w, max(p.x for p in pts) + .2)
+        y0, y1 = max(SELL, min(p.y for p in pts) - .2), min(SELL + CAR, max(p.y for p in pts) + .2)
+        box((x1 - x0, y1 - y0, .005), ((x0 + x1) / 2, (y0 + y1) / 2, .0025), ASPH(), 0)
+        for i in range(1 if n < 3 else 2, n):   # ราว 1.4 ม. ในล็อกที่ไม่มีรถ · ขยับพ้นท้ายกระบะถ้ากระบะกินเข้ามา
+            rx = max(i * LOT_W + .5, x1 + .05); rack(rx, SELL + 1.4); rack(rx, SELL + 3.0)
+    label(f'{w:g} ม.', (w / 2, -.4), .3)
+    label('ขาย 3.5 ม.', (-.45, SELL / 2), .3, -math.pi / 2)
+    label('รถ 4.5 ม.' if n == 1 else 'รถ + ขาย 4.5 ม.', (-.45, SELL + CAR / 2), .3, -math.pi / 2)
+    export_ar(f'boot-{n}')
+def build_ar_food(n):
+    """1 ล็อก = กว้าง 0.75 × ลึก 2 ม. (เจ้าของ 24 ต.ค.) · โต๊ะ 75 × 75 ด้านหน้า + ที่ยืน 1.25 ม. · n ล็อกเรียงข้างกัน"""
+    scene(); T, D = .75, 2.0; w = T * n
+    for i in range(n): ftable(i * T, 0, i)
+    for a, b in (((0, 0), (w, 0)), ((0, 0), (0, D)), ((w, 0), (w, D)), ((0, D), (w, D))): stripe(a, b, .03, YEL())
+    for i in range(1, n): stripe((i * T, 0), (i * T, D), .02, dash=.15)
+    stripe((0, T), (w, T), .02, dash=.15)                                              # แนวท้ายโต๊ะ
+    person((w / 2, 1.4), '#e2671c')
+    label(f'{75 * n} ซม.', (w / 2, -.25), .12); label('2 ม.', (-.25, D / 2), .12, -math.pi / 2)
+    export_ar(f'food-{n}')
+
+if which == 'ar':
+    for n in (1, 2, 3, 4): build_ar_boot(n); build_ar_food(n)
 if which in ('food', 'all'): build_food()
 if which in ('boot-v', 'all'): build_boot('boot-v', BOOT_V, BOOT_V_FRAME, False, .62)
 if which in ('boot-h', 'all'): build_boot('boot-h', BOOT_H, BOOT_H_FRAME, True, .36)
