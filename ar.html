@@ -91,9 +91,10 @@ const LOTS={
     ['ทั้งหมด',`${f1(.75*n)} × 2 ม. · ${n} โต๊ะ`],['1 ล็อก','0.75 × 2 ม.'],['โต๊ะ','75 × 75 ซม. ด้านหน้า'],['ที่ยืน','ลึก 1.25 ม. หลังโต๊ะ'],['คนในภาพ','สูง 1.65 ม.']]}
 };
 const mv=document.getElementById('mv'), facts=document.getElementById('facts'), noar=document.getElementById('noar');
-let kind='boot', count=1;
+let kind=new URLSearchParams(location.search).get('k')==='food'?'food':'boot', count=1;   // ?k=food จากปุ่มในแผงโซน
 function show(){
-  const L=LOTS[kind]; mv.src=`models/ar/lot-${kind}-${count}.glb`; mv.alt=`${L.alt} ${count} ล็อก`;
+  const L=LOTS[kind];   // setAttribute: ใช้ได้ทั้งก่อน/หลัง model-viewer โหลดเสร็จ (ตั้ง .src ก่อนโหลด = ไม่มีผล)
+  mv.setAttribute('src',`models/ar/lot-${kind}-${count}.glb`); mv.setAttribute('alt',`${L.alt} ${count} ล็อก`);
   facts.innerHTML=L.facts(count).map(([a,b])=>`<li><b>${a}</b>${b}</li>`).join('');
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===kind));
   document.querySelectorAll('.count button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.n===count));

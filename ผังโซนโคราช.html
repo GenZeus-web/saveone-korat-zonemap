@@ -110,6 +110,7 @@ header p{margin:4px 0 0;color:var(--mute);font-size:14px}
 .where{margin:2px 0 0;color:var(--mute);font-size:14px}
 .sec{margin-top:18px}
 .sec-h{margin:0 0 8px;font-size:14px;font-weight:700}
+.arbtn{margin-top:10px}
 .today{padding:14px 16px;border-radius:14px;background:var(--bg)}
 .today small{display:block;color:var(--mute);font-size:13px}
 .today b{font-size:34px;line-height:1.15}
@@ -332,21 +333,24 @@ const M_PER=Math.sqrt(140800/(absA(SITE)+absA(ANNEX))), U=1/M_PER;
 const zoneM2=id=>Math.round(absA(ZG[id])*M_PER*M_PER/100)*100;
 const fmtM2=v=>`≈ ${v.toLocaleString('th-TH')} ตร.ม. · ${(v/1600).toFixed(1)} ไร่`;
 // วางช่องตามขนาดจริงในรูปโซน · ช่องต้องอยู่ในรูปครบทุกมุม
+// ช่องชนตึก (มุมช่องอยู่ในตึก หรือมุมตึกอยู่ในช่อง) · ไม่นับตึกของโซนเอง (ศูนย์อาหารวางร้านในตึก)
+const onBld=(c,id)=>BLD.some(B=>B.zone!==id&&(c.some(q=>pip(B.b,q))||B.b.some(([x,y])=>x>=c[0][0]&&x<=c[2][0]&&y>=c[0][1]&&y<=c[2][1])));
+const free=(b,c,id)=>inPoly(b,c)&&!onBld(c,id);
 const inPoly=(b,c)=>c.every(q=>pip(b,q)), bbx=b=>[Math.min(...b.map(q=>q[0])),Math.max(...b.map(q=>q[0])),Math.min(...b.map(q=>q[1])),Math.max(...b.map(q=>q[1]))];
 // ลานจอด: ช่อง 2.5 × 5 ม. หันหลังชนกัน 2 แถว + ทางวิ่ง 6 ม.
 function parkSlots(id){ const b=ZG[id], [x0,x1,y0,y1]=bbx(b), w=2.5*U, d=5*U, ai=6*U, out=[];
   for(let y=y0+ai/2;y+d<=y1;y+=2*d+ai) for(const [yy,f] of [[y,0],[y+d,1]])
-    for(let x=x0+2;x+w<=x1;x+=w) if(inPoly(b,[[x,yy],[x+w,yy],[x+w,yy+d],[x,yy+d]])) out.push({x:x+w/2,y:yy+d/2,f});
+    for(let x=x0+2;x+w<=x1;x+=w) if(free(b,[[x,yy],[x+w,yy],[x+w,yy+d],[x,yy+d]],id)) out.push({x:x+w/2,y:yy+d/2,f});
   return out; }
 // เปิดท้าย: ล็อก 2.4 × 8 ม. (รถ 4.5 + ที่ขาย 3.5) หันหลังชนกัน · ทางเดิน 6 ม. · dir = ฝั่งที่ขาย (−1 ตะวันตก / 1 ตะวันออก)
 function bootSlots(id){ const b=ZG[id], [x0,x1,y0,y1]=bbx(b), w=2.4*U, d=8*U, ai=6*U, out=[];
   for(let x=x0+ai;x+2*d<=x1+1;x+=2*d+ai) for(const [xx,dir] of [[x,-1],[x+d,1]])
-    for(let y=y0+2;y+w<=y1;y+=w) if(inPoly(b,[[xx,y],[xx+d,y],[xx+d,y+w],[xx,y+w]])) out.push({x:xx+d/2,y:y+w/2,dir});
+    for(let y=y0+2;y+w<=y1;y+=w) if(free(b,[[xx,y],[xx+d,y],[xx+d,y+w],[xx,y+w]],id)) out.push({x:xx+d/2,y:y+w/2,dir});
   return out; }
 // สตรีทฟู้ด: เต็นท์ 3 × 3 ม. ขนาบทางเดิน 4 ม. · face = ฝั่งทางเดิน
 function foodSlots(id){ const b=ZG[id], [x0,x1,y0,y1]=bbx(b), t=3*U, ai=4*U, out=[];
   for(let x=x0+1;x+2*t+ai<=x1+1;x+=2*t+ai) for(const [xx,face] of [[x,1],[x+t+ai,-1]])
-    for(let y=y0+2;y+t<=y1;y+=t) if(inPoly(b,[[xx,y],[xx+t,y],[xx+t,y+t],[xx,y+t]])) out.push({x:xx+t/2,y:y+t/2,face});
+    for(let y=y0+2;y+t<=y1;y+=t) if(free(b,[[xx,y],[xx+t,y],[xx+t,y+t],[xx,y+t]],id)) out.push({x:xx+t/2,y:y+t/2,face});
   return out; }
 const SLOTS={}, slots=id=>SLOTS[id]||(SLOTS[id]=(byId[id].kind==='boot'?bootSlots:byId[id].kind==='food'?foodSlots:parkSlots)(id));
 const PAL=['#ef5b5b','#f59e3b','#f6cf45','#4fbf86','#47a2e0','#a874e2','#f27cb4'];
@@ -414,12 +418,14 @@ const photos=z=>{ const a=z.photos; if(!a||!a.length) return '';
 // อาหาร กรอบ −0.8…7.45 ม. · เปิดท้ายแนวตั้ง −1…10.2 · แนวนอน −1…19.8 (ตรงกับ FOOD_FRAME / BOOT_*_FRAME ในสคริปต์)
 const shot=(f,alt,caps)=>`<figure class="lot"><img src="${A('photos/lot-'+f+'.jpg')}" alt="${alt}"><div class="caps">${
   caps.map(([x,a,b])=>`<span style="left:${x}%"><b>${a}</b>${b?`<small>${b}</small>`:''}</span>`).join('')}</div></figure>`;
-const dgFood=()=>shot('food','โต๊ะ 75 × 75 ซม. จอง 1 ถึง 3 ล็อก โต๊ะต่อกัน',[[14.2,'1 ล็อก','โต๊ะ 1 ตัว'],[41.8,'2 ล็อก','โต๊ะต่อกัน'],[76.7,'3 ล็อก','โต๊ะต่อกัน']]);
+const dgFood=()=>shot('food','ล็อก 0.75 × 2 ม. · โต๊ะ 75 × 75 ซม. จอง 1 ถึง 3 ล็อก โต๊ะต่อกัน',[[14.2,'1 ล็อก','โต๊ะ 1 ตัว'],[41.8,'2 ล็อก','โต๊ะต่อกัน'],[76.7,'3 ล็อก','โต๊ะต่อกัน']]);
 const dgBoot=()=>shot('boot-v','จอง 1–2 ล็อก จอดรถแนวตั้ง',[[19.6,'1 ล็อก','จอดแนวตั้ง'],[69.6,'2 ล็อก','จอดแนวตั้ง']])
   +shot('boot-h','จอง 3–4 ล็อก จอดรถแนวนอนได้',[[22.1,'3 ล็อก','จอดแนวนอนได้'],[72.1,'4 ล็อก','จอดแนวนอนได้']])
   +`<div class="dg-lg"><span><i style="background:#c9b0f2;border-color:#fff"></i>ที่ขาย 3.5 ม. (หน้า)</span><span><i style="background:#9aa0a6;border-color:#fff"></i>จอดรถ 4.5 ม. (หลัง)</span><span><i style="background:#f2c230;border-color:#f2c230"></i>ท้ายล็อก</span></div>
   <p class="note">ล็อกกว้าง 2.4 ม. · ท้ายรถหันเข้าที่ขาย</p>`;
-const diagram=z=>z.kind==='food'||z.kind==='boot'?`<div class="sec"><p class="sec-h">📐 จัดล็อกยังไง</p>${z.kind==='food'?dgFood():dgBoot()}</div>`:'';
+// ปุ่ม AR → ar.html (ไฟล์เดียวเปิดจากเครื่อง ไม่มี ar.html ข้างๆ → ชี้เว็บจริง)
+const AR_URL=(location.protocol==='file:'?'https://genzeus-web.github.io/saveone-korat-zonemap/':'')+'ar.html?k=';
+const diagram=z=>z.kind==='food'||z.kind==='boot'?`<div class="sec"><p class="sec-h">📐 จัดล็อกยังไง</p>${z.kind==='food'?dgFood():dgBoot()}<a class="btn arbtn" href="${AR_URL+z.kind}">📱 ดูขนาดจริงบนพื้น (AR)</a></div>`:'';
 
 // ══ แผงรายละเอียด · ตัวกรอง ══
 let sel=null, filt='all';
@@ -754,7 +760,7 @@ function openHolo(z){
   document.getElementById('holoT').textContent=z.name;
   document.getElementById('holoSub').textContent=ev?'ตัวอย่างการจัดงาน':'ตัวอย่างร้าน 1 ล็อก';
   const tag=document.getElementById('holoTag'); tag.className='holo-tag '+z.kind;
-  tag.innerHTML=z.kind==='food'?'<i></i>ล็อก = โต๊ะ 75 × 75 ซม.':z.kind==='boot'?'<i></i>ที่ขาย 2.4 × 3.5 ม. · เส้นจาง = รวมที่จอด 2.4 × 8 ม.':z.kind==='park'?'<i></i>ช่องจอด 2.5 × 5 ม. · นับช่องจากผัง':'<i></i>ลานกว้าง ใช้ทั้งลานหรือบางส่วน';
+  tag.innerHTML=z.kind==='food'?'<i></i>ล็อก 0.75 × 2 ม. · โต๊ะ 75 × 75 ซม. ด้านหน้า':z.kind==='boot'?'<i></i>ที่ขาย 2.4 × 3.5 ม. · เส้นจาง = รวมที่จอด 2.4 × 8 ม.':z.kind==='park'?'<i></i>ช่องจอด 2.5 × 5 ม. · นับช่องจากผัง':'<i></i>ลานกว้าง ใช้ทั้งลานหรือบางส่วน';
   if(z.kind==='park') document.getElementById('holoSub').textContent='ตัวอย่างช่องจอด';
   const ic=e=>e.map(([x,t])=>`<b title="${esc(t)}">${esc(x)}</b>`).join(''), hi=document.getElementById('holoIc');
   hi.innerHTML=z.ok?`<div>✅ ขายได้ ${ic(z.ok)}</div>${z.no&&z.no.length?`<div>🚫 ห้าม ${z.no.map(([x,t])=>`<b class="no" title="ห้าม${esc(t)}">${esc(x)}</b>`).join('')}</div>`:''}`:'';

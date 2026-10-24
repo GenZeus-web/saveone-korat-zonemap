@@ -96,7 +96,7 @@ def stripe(a, b, w=.07, m=None, dash=0):
 
 PEOPLE = ['models/people/character-a.glb', 'models/people/character-f.glb', 'models/people/character-k.glb', 'models/people/character-n.glb']
 
-# ── อาหาร: โต๊ะ 75 × 75 ซม. = 1 ล็อก · 1 / 2 / 3 ล็อก โต๊ะต่อกัน · คนขายยืนหลังโต๊ะ ──
+# ── อาหาร: ล็อก 0.75 × 2 ม. · โต๊ะ 75 × 75 ซม. ด้านหน้า 1 ตัว/ล็อก · 1 / 2 / 3 ล็อก โต๊ะต่อกัน · คนขายยืนหลังโต๊ะ ──
 FOOD_G = [(0.0, 1), (1.9, 2), (4.4, 3)]   # (x เริ่ม, จำนวนโต๊ะ)
 FOOD_FRAME = (-0.8, 7.45)
 def table(x, y, i):
