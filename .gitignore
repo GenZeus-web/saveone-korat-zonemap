@@ -1,0 +1,13 @@
+# ใหญ่เกิน GitHub (100 MB) / สร้างใหม่ได้เสมอ: export-scene.js + render-market.py
+blender/market.glb
+blender/market.json
+# ภาพพรีวิว/เรนเดอร์ใน blender/ (ภาพที่ใช้จริงอยู่ photos/lot-*.jpg)
+blender/*.png
+# zip ต้นฉบับโมเดล (แตกไว้ใน models/ แล้ว)
+models/_zip/
+# ทดลองโมเดล · สำรองไฟล์ก่อนแก้
+.preview/
+_สำรอง/
+# ภาพอ้างอิงจากที่อื่น (ผังห้าง/ผังตลาดอื่น) ไม่ใช่งานของเรา
+S__*.jpg
+__pycache__/

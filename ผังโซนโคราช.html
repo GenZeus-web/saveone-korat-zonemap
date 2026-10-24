@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ผังโซนโคราช</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f3ee; --card:#fff; --ink:#1f2328; --mute:#6b6f76; --line:#e3ded5;
+  --food:#e2671c; --food-bg:#fdeee2; --boot:#7b3fd6; --boot-bg:#efe6fc; --event:#0e9384; --event-bg:#dcf5f1; --park-bg:#e3eefc;
+  --park:#2f7bd9; --guess:#b7791f; --ok:#1f8a4c; --ok-bg:#e3f5ea; --no:#d23c3c; --no-bg:#fde6e6;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#15171a; --card:#1f2226; --ink:#eceef1; --mute:#9aa0a8; --line:#30343a;
+  --food:#f0904a; --food-bg:#3a2617; --boot:#a77cf0; --boot-bg:#2a1f42; --event:#3cc9b6; --event-bg:#123a35; --park:#5b9bf0; --park-bg:#14284a; --guess:#e0a84a; --ok:#4fd08a; --ok-bg:#163423; --no:#f07070; --no-bg:#3d1a1a; } }
+:root[data-theme="dark"]{
+  --bg:#15171a; --card:#1f2226; --ink:#eceef1; --mute:#9aa0a8; --line:#30343a;
+  --food:#f0904a; --food-bg:#3a2617; --boot:#a77cf0; --boot-bg:#2a1f42; --event:#3cc9b6; --event-bg:#123a35; --park:#5b9bf0; --park-bg:#14284a; --guess:#e0a84a; --ok:#4fd08a; --ok-bg:#163423; --no:#f07070; --no-bg:#3d1a1a; }
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 'Noto Sans Thai',system-ui,sans-serif}
+.wrap{max-width:1360px;margin:0 auto;padding:0 16px 24px}
+header{padding:18px 0 2px}
+header .eyebrow{margin:0;font-size:13px;font-weight:600;color:var(--mute)}
+header h1{margin:2px 0 0;font-size:24px;line-height:1.3}
+header p{margin:4px 0 0;color:var(--mute);font-size:14px}
+.draft{display:inline-block;margin-top:8px;padding:2px 10px;border-radius:999px;background:var(--food-bg);color:var(--guess);font-size:12px;font-weight:600}
+/* ปุ่มกรอง: ติดหัวจอ · มือถือเลื่อนซ้าย-ขวา */
+.filters{position:sticky;top:0;z-index:20;display:flex;gap:8px;align-items:center;margin:8px -16px 12px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;
+  background:var(--bg);background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.filters::-webkit-scrollbar{display:none}
+.filters span{flex:none;color:var(--mute);font-size:14px;font-weight:600}
+.chip{flex:none;min-height:40px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 15px;font:inherit;font-size:15px;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.grid>*{min-width:0}
+#map[hidden]{display:none}
+.map{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px}
+.lg{display:flex;gap:4px 14px;flex-wrap:wrap;padding:8px 6px 2px;color:var(--mute);font-size:13px}
+.lg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* เวที 3 มิติ */
+.stage{position:relative;height:min(80vh,920px);min-height:420px;border-radius:10px;overflow:hidden;background:#93b86f;touch-action:manipulation}
+.stage>canvas{display:block;width:100%;height:100%;cursor:default}
+.stage.flat{height:auto;min-height:0;overflow-x:auto}
+.stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 100% at 50% 45%,transparent 60%,rgba(20,40,20,.18))}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;border-radius:999px;font-family:inherit;transition:opacity .2s}
+.lb.zone{pointer-events:auto;cursor:pointer;border:0;color:#fff;font-size:15px;font-weight:700;padding:5px 13px;box-shadow:0 3px 10px rgba(0,0,0,.28),0 0 0 2px rgba(255,255,255,.9)}
+.lb.zone.food{background:#e2671c} .lb.zone.boot{background:#7b3fd6} .lb.zone.event{background:#0e9384} .lb.zone.park{background:#2f7bd9;font-size:13px;padding:3px 10px}
+.lb.zone.sel{box-shadow:0 3px 12px rgba(0,0,0,.35),0 0 0 3px #1f2328}
+.lb.zone:focus-visible{outline:3px solid #1f2328;outline-offset:2px}
+.lb.office{background:#1f2328;color:#fff;font-size:13px;padding:3px 10px}
+.lb.off{opacity:0;pointer-events:none}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:#4b5a44;font-size:15px;z-index:2}
+.back{position:absolute;left:12px;top:12px;z-index:3;border:0;border-radius:999px;background:rgba(255,255,255,.95);color:#1f2328;font:inherit;font-size:14px;font-weight:600;padding:7px 14px;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:pointer}
+.back[hidden]{display:none}
+
+/* โฮโลแกรมร้านตัวอย่าง */
+.holo{position:absolute;top:14px;right:14px;bottom:14px;width:min(440px,46%);z-index:3;display:flex;flex-direction:column;border-radius:16px;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 68%,rgba(16,70,104,.93),rgba(5,14,28,.95));border:1px solid rgba(95,243,255,.5);
+  box-shadow:0 0 0 1px rgba(95,243,255,.14),0 0 40px rgba(95,243,255,.3),0 12px 30px rgba(0,0,0,.35);color:#c9fbff;
+  opacity:0;transform:translateX(16px) scale(.97);pointer-events:none;transition:opacity .4s,transform .4s}
+.holo.on{opacity:1;transform:none;pointer-events:auto}
+.holo::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:2;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(95,243,255,.045) 3px 4px)}
+.holo::after{content:'';position:absolute;left:0;right:0;height:40%;top:-40%;pointer-events:none;z-index:2;background:linear-gradient(transparent,rgba(95,243,255,.07),transparent);animation:sweep 4.5s linear infinite}
+@keyframes sweep{to{top:100%}}
+.holo-h{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:13px 14px 0;position:relative;z-index:3}
+.holo-h b{display:block;font-size:17px;color:#effeff;text-shadow:0 0 10px rgba(95,243,255,.7)}
+.holo-h small{font-size:12px;color:#7fdfe8;letter-spacing:.02em}
+.holo-x{border:1px solid rgba(95,243,255,.55);background:rgba(95,243,255,.08);color:#c9fbff;border-radius:999px;width:34px;height:34px;font-size:15px;cursor:pointer;flex:none}
+.holo-gl{flex:1;min-height:0;position:relative}
+.holo-gl canvas{position:absolute;inset:0;width:100%;height:100%}
+.holo-tag{position:absolute;left:14px;right:14px;bottom:10px;z-index:3;font-size:12px;color:#ffd2a6}
+.holo-tag i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:#ffa860;box-shadow:0 0 8px #ffa860}
+.holo-tag.boot{color:#e0ccff} .holo-tag.boot i{background:#c59bff;box-shadow:0 0 8px #c59bff}
+.holo-tag.event{color:#b8fff2} .holo-tag.event i{background:#5ff0d0;box-shadow:0 0 8px #5ff0d0}
+.holo-tag.park{color:#cfe3ff} .holo-tag.park i{background:#6aa8ff;box-shadow:0 0 8px #6aa8ff}
+.holo-s{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(95,243,255,.28);position:relative;z-index:3;background:rgba(3,10,20,.35)}
+.holo-s div{padding:10px 10px 11px;border-right:1px solid rgba(95,243,255,.16);min-width:0} .holo-s div:last-child{border-right:0}
+.holo-s small{display:block;font-size:11px;color:#7fdfe8}
+.holo-s b{display:block;font-size:15px;color:#effeff;text-shadow:0 0 8px rgba(95,243,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.holo-s b.big{font-size:18px}
+@media (max-width:860px){ .holo{left:10px;right:10px;width:auto;top:auto;height:62%;bottom:10px} .holo-s{grid-template-columns:repeat(2,1fr)} .holo-s div:nth-child(2){border-right:0} }
+@media (prefers-reduced-motion:reduce){ .holo,.lb{transition:none} .holo::after{animation:none} }
+
+/* ผังแบนสำรอง (ถ้าเครื่องเปิด 3 มิติไม่ได้) */
+#map{width:100%;height:auto;display:block}
+#map [data-id]{cursor:pointer}
+.zg{fill-opacity:.22;stroke-width:3}
+.zg.food{fill:#ff8a3d;stroke:#e2671c} .zg.boot{fill:#9b5cf0;stroke:#7b3fd6} .zg.event{fill:#2cc7b1;stroke:#0e9384} .zg.park{fill:#5b9bf0;stroke:#2f7bd9}
+.zg.sel{fill-opacity:.5;stroke-width:6}
+#map .dim{opacity:.22}
+.pill{filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+.pill text{font-size:26px;font-weight:700;fill:#fff;font-family:'Noto Sans Thai',sans-serif}
+.pill.food rect{fill:#e2671c} .pill.boot rect{fill:#7b3fd6} .pill.event rect{fill:#0e9384}
+.pill.sel rect{stroke:#1f2328;stroke-width:5}
+.pill.office rect{fill:#1f2328;stroke:#1f2328} .pill.office text{font-size:20px;fill:#fff}
+.rdl{fill:#fff;font-size:24px;font-weight:700;opacity:.92;font-family:'Noto Sans Thai',sans-serif}
+.pk{fill:#fff;font-size:17px;font-weight:700;font-family:sans-serif}
+
+/* แผงรายละเอียด */
+.panel{--pp:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:var(--pp);position:sticky;top:70px;max-height:calc(100vh - 86px);overflow:auto;scroll-margin-top:64px}
+.panel .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px}
+.tag.food{background:var(--food-bg);color:var(--food)} .tag.boot{background:var(--boot-bg);color:var(--boot)} .tag.event{background:var(--event-bg);color:var(--event)} .tag.park{background:var(--park-bg);color:var(--park)}
+.panel h2{margin:6px 0 0;font-size:22px;line-height:1.3}
+.where{margin:2px 0 0;color:var(--mute);font-size:14px}
+.sec{margin-top:18px}
+.sec-h{margin:0 0 8px;font-size:14px;font-weight:700}
+.today{padding:14px 16px;border-radius:14px;background:var(--bg)}
+.today small{display:block;color:var(--mute);font-size:13px}
+.today b{font-size:34px;line-height:1.15}
+.today .u{font-size:15px;font-weight:600}
+.today .sub{margin-top:6px;font-size:12px;line-height:1.45}
+.food .today b,.today.food b{color:var(--food)} .today.boot b{color:var(--boot)} .today.event b{color:var(--event)} .today.park b{color:var(--park)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fact{padding:10px 12px;border-radius:12px;border:1px solid var(--line);min-width:0}
+.fact.w{grid-column:1/-1}
+.fact small{display:block;font-size:12px;color:var(--mute)}
+.fact b{display:block;font-size:15px;line-height:1.4;font-weight:600}
+.fact b small{display:block;font-weight:400;font-size:12px;color:var(--mute)}
+/* ขั้นตอน = วงกลมเลข + ข้อความ */
+.flow{list-style:none;margin:0;padding:0;display:grid;gap:12px;counter-reset:s}
+.flow li{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start;font-size:14px;line-height:1.5;counter-increment:s}
+.flow li::before{content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--bg);font-weight:700;font-size:14px}
+.flow b{display:block;font-size:15px}
+.flow span{color:var(--mute)}
+/* หัวข้อพับได้ */
+.acc{margin-top:16px;border-top:1px solid var(--line)}
+.acc details{border-bottom:1px solid var(--line)}
+.acc summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:50px;cursor:pointer;font-weight:600;font-size:15px}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary::after{content:'';flex:none;width:8px;height:8px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(45deg);margin:0 6px 4px 0;transition:transform .2s}
+.acc details[open] summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+.acc ul{margin:0;padding:0 0 14px 20px;font-size:14px;display:grid;gap:6px}
+.acc .db{padding-bottom:14px}
+.actions{display:flex;gap:8px;margin-top:16px}
+.btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:0 12px;border-radius:12px;font:inherit;font-weight:700;font-size:15px;text-decoration:none;border:1px solid var(--line);color:var(--ink);background:var(--card);cursor:pointer;text-align:center}
+.btn.pri{flex:1.5;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.actions .btn{white-space:nowrap}
+.tt{margin:4px 0 0;font-size:13px;color:var(--mute);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:4px 0 10px}
+th,td{padding:8px 4px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
+td b{font-size:16px}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mute);font-weight:600;font-size:13px}
+.cur td{font-weight:700}
+td small{display:block;color:var(--mute);font-size:11px;font-weight:400;line-height:1.3}
+.note{font-size:13px;color:var(--mute);margin:8px 0 0}
+.warn{font-size:13px;color:var(--guess);margin:12px 0 0}
+.empty{color:var(--mute);text-align:center;padding:26px 6px}
+.empty b{display:block;font-size:30px;margin-bottom:4px}
+/* รูปจริง (ปัดซ้าย-ขวา · แตะดูใหญ่) */
+.photos{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 calc(-1*var(--pp));padding:0 var(--pp) 4px;scrollbar-width:none}
+.photos::-webkit-scrollbar{display:none}
+.photos figure{flex:none;width:74%;max-width:250px;margin:0;scroll-snap-align:start;position:relative;cursor:zoom-in}
+.photos img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:12px;background:var(--line)}
+.photos figcaption{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:2px 9px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbx{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;background:rgba(0,0,0,.88);color:#fff;cursor:zoom-out}
+.lbx.on{display:flex} .lbx img{max-width:100%;max-height:80vh;border-radius:10px} .lbx p{margin:0;font-size:14px}
+/* ภาพจัดล็อก (เรนเดอร์ Blender) + ป้ายใต้ภาพตามตำแหน่งจริง */
+.lot{margin:0 0 10px}
+.lot img{display:block;width:100%;height:auto;border-radius:12px}
+.lot .caps{position:relative;height:40px}
+.lot .caps span{position:absolute;top:4px;transform:translateX(-50%);text-align:center;white-space:nowrap;line-height:1.25}
+.lot .caps b{display:block;font-size:14px} .lot .caps small{display:block;font-size:11px;color:var(--mute)}
+.dg-lg{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--mute)}
+.dg-lg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:1.5px solid}
+/* ไอคอนขายได้ / ห้ามขาย */
+.can-h{margin:12px 0 6px;font-size:14px;font-weight:700} .can-h.ok{color:var(--ok)} .can-h.no{color:var(--no)}
+.can-h small{font-weight:400;color:var(--mute);font-size:12px}
+.can-h:first-child{margin-top:0}
+.icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px}
+.ic{padding:9px 2px 7px;border-radius:12px;text-align:center;background:var(--ok-bg);position:relative}
+.ic i{display:block;font-style:normal;font-size:28px;line-height:1.15}
+.ic span{display:block;font-size:12px;line-height:1.25;margin-top:3px}
+.ic.no{background:var(--no-bg)}
+/* ป้ายห้าม = วงกลมแดง + ขีดทแยง ทับอีโมจิ */
+.ic.no i{width:46px;height:46px;margin:0 auto;border:3.5px solid var(--no);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;position:relative;letter-spacing:-4px}
+.ic.no i::after{content:'';position:absolute;left:50%;top:50%;width:100%;height:3.5px;background:var(--no);transform:translate(-50%,-50%) rotate(-45deg)}
+.holo-ic{padding:0 14px 8px;position:relative;z-index:3;font-size:12px;color:#7fdfe8;display:grid;gap:4px}
+.holo-ic div{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.holo-ic b{font-size:20px;line-height:1;font-weight:400;position:relative;padding:2px}
+.holo-ic b.no{width:28px;height:28px;padding:0;font-size:14px;border:2px solid #ff6b6b;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;letter-spacing:-3px;box-shadow:0 0 6px rgba(255,107,107,.6)}
+.holo-ic b.no::after{content:'';position:absolute;left:50%;top:50%;width:100%;height:2px;background:#ff6b6b;transform:translate(-50%,-50%) rotate(-45deg)}
+.holo-ic[hidden]{display:none}
+.holo-more{display:none;position:relative;z-index:3;margin:0 10px 10px;min-height:44px;align-items:center;justify-content:center;border-radius:12px;border:1px solid rgba(95,243,255,.55);background:rgba(95,243,255,.14);color:#effeff;font:inherit;font-weight:700;font-size:15px;cursor:pointer}
+/* รายการโซน */
+.sect-t{margin:28px 0 10px;font-size:19px}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.card{border:1px solid var(--line);border-left:5px solid var(--c,var(--line));background:var(--card);border-radius:12px;padding:12px 14px;text-align:left;font:inherit;color:inherit;cursor:pointer;min-height:64px}
+.card.food{--c:var(--food)} .card.boot{--c:var(--boot)} .card.event{--c:var(--event)} .card.park{--c:var(--park)}
+.card.sel{outline:2px solid var(--ink);outline-offset:1px}
+.card b{display:block;font-size:15px;line-height:1.35} .card small{display:block;color:var(--mute);font-size:13px}
+.card .p{margin-top:4px;font-weight:700;font-size:14px;color:var(--c)}
+.card[hidden]{display:none}
+.more{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:28px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.box h3{margin:0 0 12px;font-size:19px}
+.box a{color:inherit}
+.calls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.calls .btn{font-size:14px;flex-direction:column;gap:0;padding:6px 4px;line-height:1.3}
+.calls .btn small{font-weight:400;font-size:11px;color:var(--mute)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;margin:0}
+.kv dt{color:var(--mute)} .kv dd{margin:0}
+footer{margin:22px 0 6px;color:var(--mute);font-size:12px;line-height:1.6}
+/* มือถือ */
+@media (max-width:860px){
+  .grid{grid-template-columns:1fr;gap:12px}
+  header h1{font-size:21px}
+  .map{padding:6px;border-radius:14px}
+  .stage{height:min(105vw,62vh);height:min(105vw,62svh);min-height:340px}
+  .lb.zone{font-size:13px;padding:4px 10px} .lb.zone.park{font-size:11px;padding:2px 8px}
+  #map{min-width:760px}
+  .holo{left:8px;right:8px;width:auto;top:auto;bottom:8px;height:60%}
+  .holo-s,.holo-ic,.holo-tag{display:none}
+  .holo-more{display:flex}
+  .panel{--pp:16px;position:static;max-height:none;overflow:visible}
+  .list{grid-template-columns:1fr 1fr;gap:8px}
+  .card{padding:10px 12px}
+}
+@media (max-width:520px){ .calls{grid-template-columns:1fr} .calls .btn{flex-direction:row;justify-content:space-between;padding:0 16px;font-size:15px} .calls .btn small{font-size:13px} }
+@media (max-width:340px){ .list{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <p class="eyebrow">ตลาดเซฟวัน โคราช</p>
+  <h1>มาขายที่ไหนดี?</h1>
+  <p>แตะโซนบนผัง ดูว่าขายอะไรได้ ราคา และวิธีจอง</p>
+  <span class="draft">ร่าง · ? = ยังรอยืนยัน</span>
+</header>
+
+<div class="filters" role="group" aria-label="อยากขายอะไร">
+  <span>อยากขาย</span>
+  <button type="button" class="chip on" data-f="all">ทั้งหมด</button>
+  <button type="button" class="chip" data-f="food">🍢 ขายอาหาร</button>
+  <button type="button" class="chip" data-f="boot">👕 ขายสินค้า</button>
+  <button type="button" class="chip" data-f="event">🎪 ลานกิจกรรม</button>
+  <button type="button" class="chip" data-f="park">🅿️ ที่จอดรถ</button>
+</div>
+
+<div class="grid">
+  <div class="map">
+    <div class="stage" id="stage">
+      <div class="labels" id="labels"></div>
+      <div class="loading" id="loading">กำลังสร้างผัง…</div>
+      <svg id="map" viewBox="225 5 1605 1410" role="img" aria-label="ผังตลาดเซฟวัน โคราช" hidden></svg>
+      <button type="button" class="back" id="back" hidden>← ดูทั้งตลาด</button>
+      <div class="holo" id="holo" aria-hidden="true">
+        <div class="holo-h"><div><b id="holoT"></b><small id="holoSub">ตัวอย่างร้าน 1 ล็อก</small></div><button type="button" class="holo-x" id="holoX" aria-label="ปิด">✕</button></div>
+        <div class="holo-gl" id="holoGl"><div class="holo-tag" id="holoTag"></div></div>
+        <div class="holo-ic" id="holoIc"></div>
+        <div class="holo-s" id="holoS"></div>
+        <button type="button" class="holo-more" id="holoMore">ขายอะไรได้ · ราคา · วิธีจอง ↓</button>
+      </div>
+    </div>
+    <div class="lg"><span><i style="background:var(--food)"></i>ขายอาหาร</span><span><i style="background:var(--boot)"></i>ขายสินค้า</span><span><i style="background:var(--event)"></i>ลานกิจกรรม</span><span><i style="background:var(--park)"></i>ที่จอดรถ</span><span><i style="background:#1f2328"></i>สำนักงาน (จองที่เคาน์เตอร์)</span></div>
+  </div>
+  <aside class="panel" id="panel" aria-live="polite"></aside>
+</div>
+
+<h2 class="sect-t">ทุกโซน</h2>
+<div class="list" id="list"></div>
+
+<div class="more">
+  <section class="box">
+    <h3>เริ่มขายครั้งแรก</h3>
+    <ol class="flow">
+      <li><div><b>โหลดแอป SAVEONE แล้วสมัคร</b><span>ใช้เบอร์โทรจริง รับรหัส OTP</span></div></li>
+      <li><div><b>ผูกบัญชีก่อนจ่ายเงิน</b><span>ไม่ผูก = จองไม่ได้</span></div></li>
+      <li><div><b>จองในแอป 12:00–15:00</b><span>ขายวันถัดไป · หรือจองที่เคาน์เตอร์ 15:00–18:00 พร้อมบัตรประชาชน</span></div></li>
+      <li><div><b>มาตั้งร้าน</b><span>เปิดท้ายสุ่มล็อกใหม่ทุกวัน ดูเลขล็อกในแอป</span></div></li>
+    </ol>
+    <p class="note">จองไม่ได้ / ข้อมูลซ้ำ → Inbox เพจ saveonekorat หรือถามที่เคาน์เตอร์</p>
+  </section>
+  <section class="box">
+    <h3>ติดต่อสำนักงาน</h3>
+    <div class="calls">
+      <a class="btn" href="tel:044222588">📞 044-222-588<small>ทุกโซน</small></a>
+      <a class="btn" href="tel:044299169">📞 044-299-169<small>อาหาร</small></a>
+      <a class="btn" href="tel:044300555">📞 044-300-555<small>เปิดท้าย</small></a>
+    </div>
+    <dl class="kv"><dt>เปิด</dt><dd>15:00–22:00</dd>
+      <dt>LINE</dt><dd>@saveonemarket</dd><dt>Facebook</dt><dd>saveonekorat</dd>
+      <dt>ที่อยู่</dt><dd>1485/1 ถ.มิตรภาพ ต.ในเมือง อ.เมือง จ.นครราชสีมา</dd></dl>
+  </section>
+</div>
+
+<div class="lbx" id="lbx" role="dialog" aria-label="ดูรูปใหญ่"><img alt=""><p></p></div>
+
+<footer>ผังจากแผนที่ตลาดเซฟวัน 28 ส.ค. 69 · ข้อมูลและภาพถ่ายจากหน้าเว็บ “มาขาย” ของตลาด (ดึง 23–24 ต.ค. 69) · โมเดลรถ/ร้าน/คน/ต้นไม้: Kenney.nl (CC0)</footer>
+</div>
+
+<script src="assets.js"></script>
+<script>
+// ══ ข้อมูลโซน ══
+// ASSETS (assets.js) = โมเดล/โลโก้ฝังในไฟล์ · ไม่มี = โหลดจากโฟลเดอร์ (ต้องเปิดผ่านเซิร์ฟเวอร์)
+const A=p=>(window.ASSETS&&ASSETS[p])||p;
+// ฤดูราคา: low = 13 เม.ย.–31 ต.ค. · high = 1 พ.ย.–12 เม.ย. · [จ.–พฤ., ศ.–อา.] บาท/ล็อก/วัน จองผ่านแอป
+const SEASON={low:'13 เม.ย. – 31 ต.ค.',high:'1 พ.ย. – 12 เม.ย.'};
+// รหัสล็อก ↔ จุดขาย จากตารางราคาบนเว็บ (รูป "ค่าเช่า-โซนสตรีทฟู้ด") · Lotus = ชื่อร้านเดิมในเว็บ
+const FOOD_T=[{codes:'TA01–46 · TB01–43 <small>หน้าอาคาร ฝั่ง 7-11</small><br>TD–TN <small>กลางถนน ไม่มีหลังคา</small><br>FA <small>เปิดท้ายขายอาหาร</small>',low:[110,140],high:[130,160]},
+              {codes:'TA47–71 · TB45–71 <small>หน้าอาคาร ฝั่ง Lotus เดิม</small>',low:[55,70],high:[65,80]}];
+const BOOT_T=[{codes:'โซน S <small>จอง 13:00 · ไม่มี VIP</small>',low:[160,210],high:[210,260]},
+              {codes:'โซน U–Z <small>VIP 12:00 · ทั่วไป 13:00</small>',low:[210,260],high:[260,310]},
+              {codes:'โซน R ?',low:[200,250],high:[200,250]}];
+const ELEC='200 วัตต์แรก 30 ฿ <small>+10 ฿ ทุก 100 วัตต์</small>';
+// ok / no = ไอคอนขายได้ / ห้ามขาย [อีโมจิ, ป้าย] · ใส่เฉพาะที่เว็บตลาดเขียนไว้ (หรือเจ้าของแจ้ง) · noTo = ไปขายที่ไหนแทน
+// steps = วิธีจอง [หัวข้อ, รายละเอียด] · rules / refund = ข้อย่อยในหัวข้อพับได้ · facts = กล่องข้อมูลสั้น [อีโมจิ, ป้าย, ค่า]
+const HOT=[['🍤','ทอด'],['🍢','ปิ้ง'],['🍖','ย่าง']];
+const FOOD={kind:'food',tiers:FOOD_T,size:'โต๊ะ 75 × 75 ซม.',sell:'ทอด · ปิ้ง · ย่าง · ของหวาน',
+  ok:[...HOT,['🍧','ของหวาน']],
+  facts:[['📐','ขนาดล็อก','โต๊ะ 75 × 75 ซม.'],['🔢','จองได้','หลายล็อก']],
+  steps:[['จองในแอป SAVEONE','12:00–15:00 ? · จองวันนี้ ขายพรุ่งนี้ · ราคาคิดตามวันที่จอง'],
+         ['หรือจองที่เคาน์เตอร์สำนักงาน','15:00–18:00 · ขายวันเดียวกัน · เฉพาะล็อกที่เหลือ · +30 บาท/ล็อก']],
+  rules:['ตลาดมีโต๊ะให้ · นำมาเองต้องขนาด 75 × 75 ซม.','จองได้หลายล็อก'],
+  refund:['เฉพาะจองผ่านแอป · คืนเป็นยอดคงเหลือ','ได้ล็อกไม่ตรงโซนที่เลือก ยกเลิกก่อน 15:00 → คืน 100%','ฝนตกก่อน 19:30 จนขายไม่ได้ → คืน 50%'],
+  tel:'044-222-588 · 044-299-169',ask:'แอปปิดจอง 15:00 หรือ 15:30 เว็บเขียนไม่ตรงกัน',
+  ig:'saveonefood',model:'tent',lot:'75 × 75 ซม.',m2:'0.56 ตร.ม.',add:30};
+const BOOT={kind:'boot',tiers:BOOT_T,size:'ที่ขาย 2.4 × 3.5 ม. · รวมที่จอด 2.4 × 8 ม.',
+  sell:'เสื้อผ้า · กระเป๋า · รองเท้า · นาฬิกา · แว่น · แฮนด์เมด · ตุ๊กตา · น้ำหอม · มือสอง',
+  ok:[['👕','เสื้อผ้า'],['👜','กระเป๋า'],['👟','รองเท้า'],['⌚','นาฬิกา'],['🕶️','แว่น'],['🧶','แฮนด์เมด'],['🧸','ตุ๊กตา'],['🌸','น้ำหอม'],['♻️','มือสอง']],
+  no:[['💊','ของผิดกฎหมาย'],['🐶','สัตว์เลี้ยง'],['🗡️','อาวุธ']], // เจ้าของแจ้ง 24 ต.ค. 69 · ไม่มีบนเว็บ
+  facts:[['📐','ขนาดล็อก','ขาย 2.4 × 3.5 ม. <small>รวมที่จอด 2.4 × 8 ม.</small>'],['🔢','จองได้','ไม่เกิน 4 ล็อก']],
+  steps:[['จองในแอป SAVEONE','โซน U–Z: VIP 12:00 · ทั่วไป 13:00 · โซน S: 13:00 ไม่มี VIP · ปิด 15:00'],
+         ['หรือจองที่เคาน์เตอร์สำนักงาน','15:00–18:00 · +50 บาท/ล็อก · ลูกค้าใหม่ใช้บัตรประชาชนรับบัตรคิว ตั้งแต่ 15:30'],
+         ['มาตั้งร้าน','ล็อกสุ่มใหม่ทุกวัน ดูเลขล็อกในแอป · จอดรถในล็อก']],
+  rules:['ไม่ใช่ล็อกประจำ สุ่มล็อกใหม่ทุกวัน','จองได้ไม่เกิน 4 ล็อก','ต้องจอดรถในล็อกอย่างน้อย 1 คัน · รถอยู่ในส่วน 4.5 ม. ของล็อก','จอง 3–4 ล็อก จอดรถแนวขวางได้','ใช้ไฟต้องแจ้งตอนจองทุกครั้ง'],
+  refund:['เฉพาะจองผ่านแอป · คืนเป็นยอดคงเหลือ','โซน U–Z ยกเลิกก่อน 15:00 → คืน 50%','ฝนตกก่อน 19:30 จนขายไม่ได้ → คืน 50%'],
+  tel:'044-222-588 · 044-300-555',ask:'VIP คืออะไร สมัครยังไง ยังไม่มีข้อมูล · ข้อห้ามยังรอยืนยัน',
+  ig:'saveonecarboot',model:'car',lot:'2.4 × 3.5 ม.',m2:'8.4 ตร.ม.',add:50};
+const ZONES=[
+  {...FOOD,id:'food-sf1',name:'สตรีทฟู้ด ฝั่งเซเว่น',where:'ริมกำแพงซ้าย ข้าง 7-11 / ZEED BBQ'},
+  {...FOOD,id:'food-sf2',name:'สตรีทฟู้ด หลังคาสูง',where:'ใต้หลังคาสูง ใกล้ Swensen\'s · ติด J.M. Steel'},
+  {...FOOD,id:'food-in',name:'ศูนย์อาหาร',where:'อาคารศูนย์อาหาร ติดสำนักงานตลาด',model:'kiosk',sell:'เฉพาะอาหารที่ไม่ปรุงด้วยความร้อน (ปิ้ง/ย่าง/ทอด ขายหน้าอาคาร)',
+   ok:[['❄️','ไม่ใช้ความร้อน']],no:[['🔥💨','ปิ้ง ย่าง ทอด']],noTo:'ขายหน้าอาคาร'},
+  {...BOOT,id:'boot-a',name:'เปิดท้าย ข้าง J.M. Steel',where:'แนวยาวข้าง J.M. Steel ฝั่ง Makro'},
+  {...BOOT,id:'boot-b',name:'เปิดท้าย ลานใหญ่',where:'ลานด้านในสุด เลยหลังคาสูงลงไป'},
+  {kind:'event',id:'event',name:'ลานกิจกรรม หน้าธนาคาร',model:'stage',where:'ลานจอดรถหน้าธนาคารไทยพาณิชย์ ติดถนนมิตรภาพ',
+   size:'ใช้ทั้งลานหรือบางส่วน ตามงาน',sell:'งานสตรีทฟู้ด · คอนเสิร์ต · กิจกรรมแบรนด์ · มีวัน Setup ก่อนงานได้',
+   ok:[['🍢','สตรีทฟู้ด'],['🎤','คอนเสิร์ต'],['🏷️','งานแบรนด์']],
+   tel:'044-222-588 · 044-300-555',past:'KFC Drive Thru · Chang Carnival · Saveone Meeting Bike'},
+  {kind:'park',model:'park',id:'park-1',name:'ลานจอด ข้าง ZEED BBQ',where:'หลัง 7-11 / ZEED BBQ',near:'สตรีทฟู้ด ฝั่งเซเว่น · ศูนย์อาหาร'},
+  {kind:'park',model:'park',id:'park-2',name:'ลานจอด นอกกำแพงซ้าย',where:'นอกกำแพงฝั่งซ้าย ข้างศูนย์อาหาร',near:'ศูนย์อาหาร · สำนักงาน'},
+  {kind:'park',model:'park',id:'park-3',name:'ลานจอด ข้าง Autobacs',where:'ระหว่าง Autobacs กับเปิดท้ายข้าง J.M. Steel',near:'เปิดท้าย ข้าง J.M. Steel'},
+  {kind:'park',model:'park',id:'park-4',name:'ลานจอด ฝั่ง Makro',where:'ลานใหญ่ฝั่ง Makro หลังแนวแบ่ง',near:'เปิดท้าย ข้าง J.M. Steel · Makro'},
+  {kind:'park',model:'park',id:'park-5',name:'ลานจอด ท้ายตลาด',where:'ใต้ลานเปิดท้ายใหญ่ สุดตลาด',near:'เปิดท้าย ลานใหญ่'}
+];
+const byId=Object.fromEntries(ZONES.map(z=>[z.id,z]));
+// หมวดตามเว็บตลาด: ขายอาหาร · ขายสินค้า · ขายบริการ · ลานกิจกรรม — บริการยังไม่มีข้อมูลตำแหน่ง/ราคา (เจ้าของ 24 ต.ค. 69: จดไว้ก่อน ยังไม่ใส่)
+const KIND={food:'ขายอาหาร',boot:'ขายสินค้า · เปิดท้าย',event:'ลานกิจกรรม',park:'ที่จอดรถ'};
+
+// ══ ผัง (พิกัด = พิกัดแผนที่ตลาด 28 ส.ค. 69 · y = ทิศใต้) ══
+const R=(x,y,w,d)=>[[x,y],[x+w,y],[x+w,y+d],[x,y+d]];
+const cen=b=>[b.reduce((s,p)=>s+p[0],0)/b.length,b.reduce((s,p)=>s+p[1],0)/b.length];
+const area=b=>b.reduce((s,p,i)=>{ const q=b[(i+1)%b.length]; return s+p[0]*q[1]-q[0]*p[1]; },0);
+function pip(b,[x,y]){ let in_=false; for(let i=0,j=b.length-1;i<b.length;j=i++){ const [xi,yi]=b[i],[xj,yj]=b[j];
+  if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi) in_=!in_; } return in_; }
+const SITE=[[405,140],[1715,75],[1625,920],[1430,825],[1185,780],[1060,1405],[700,1370],[740,735],[405,715]];
+const ANNEX=R(262,432,135,183), ROAD=[[305,94],[1812,20],[1812,72],[305,146]];
+const ZG={
+  'food-sf1':R(402,294,64,143), 'food-sf2':[[894,518],[1000,518],[992,710],[894,710]], 'food-in':R(412,447,174,176),
+  'boot-a':[[1142,440],[1238,440],[1187,734],[1098,734]], 'boot-b':[[852,748],[1168,762],[1096,1214],[812,1198]],
+  'event':[[758,208],[1000,202],[994,456],[758,450]],
+  // ลานจอด: รูปตามแผนที่ตลาด (เว้นตึก/กำแพง)
+  'park-1':[[498,205],[576,205],[576,440],[468,440],[468,292],[498,292]],
+  'park-2':[[262,432],[397,432],[397,615],[282,615],[262,595]],
+  'park-3':[[1188,196],[1282,193],[1242,436],[1150,436]],
+  'park-4':[[1306,96],[1398,92],[1362,488],[1470,502],[1480,382],[1678,410],[1625,915],[1430,822],[1190,778]],
+  'park-5':[[712,1215],[1093,1232],[1083,1248],[985,1248],[972,1388],[700,1370]]
+};
+// มาตราส่วน ≈ พื้นที่ตลาดรวม 88 ไร่ (ไทยรัฐ) เทียบรูปผัง → 1 หน่วยผัง ≈ 0.35 ม. · U = หน่วยผังต่อ 1 เมตร
+const absA=b=>Math.abs(area(b))/2;
+const M_PER=Math.sqrt(140800/(absA(SITE)+absA(ANNEX))), U=1/M_PER;
+const zoneM2=id=>Math.round(absA(ZG[id])*M_PER*M_PER/100)*100;
+const fmtM2=v=>`≈ ${v.toLocaleString('th-TH')} ตร.ม. · ${(v/1600).toFixed(1)} ไร่`;
+// วางช่องตามขนาดจริงในรูปโซน · ช่องต้องอยู่ในรูปครบทุกมุม
+const inPoly=(b,c)=>c.every(q=>pip(b,q)), bbx=b=>[Math.min(...b.map(q=>q[0])),Math.max(...b.map(q=>q[0])),Math.min(...b.map(q=>q[1])),Math.max(...b.map(q=>q[1]))];
+// ลานจอด: ช่อง 2.5 × 5 ม. หันหลังชนกัน 2 แถว + ทางวิ่ง 6 ม.
+function parkSlots(id){ const b=ZG[id], [x0,x1,y0,y1]=bbx(b), w=2.5*U, d=5*U, ai=6*U, out=[];
+  for(let y=y0+ai/2;y+d<=y1;y+=2*d+ai) for(const [yy,f] of [[y,0],[y+d,1]])
+    for(let x=x0+2;x+w<=x1;x+=w) if(inPoly(b,[[x,yy],[x+w,yy],[x+w,yy+d],[x,yy+d]])) out.push({x:x+w/2,y:yy+d/2,f});
+  return out; }
+// เปิดท้าย: ล็อก 2.4 × 8 ม. (รถ 4.5 + ที่ขาย 3.5) หันหลังชนกัน · ทางเดิน 6 ม. · dir = ฝั่งที่ขาย (−1 ตะวันตก / 1 ตะวันออก)
+function bootSlots(id){ const b=ZG[id], [x0,x1,y0,y1]=bbx(b), w=2.4*U, d=8*U, ai=6*U, out=[];
+  for(let x=x0+ai;x+2*d<=x1+1;x+=2*d+ai) for(const [xx,dir] of [[x,-1],[x+d,1]])
+    for(let y=y0+2;y+w<=y1;y+=w) if(inPoly(b,[[xx,y],[xx+d,y],[xx+d,y+w],[xx,y+w]])) out.push({x:xx+d/2,y:y+w/2,dir});
+  return out; }
+// สตรีทฟู้ด: เต็นท์ 3 × 3 ม. ขนาบทางเดิน 4 ม. · face = ฝั่งทางเดิน
+function foodSlots(id){ const b=ZG[id], [x0,x1,y0,y1]=bbx(b), t=3*U, ai=4*U, out=[];
+  for(let x=x0+1;x+2*t+ai<=x1+1;x+=2*t+ai) for(const [xx,face] of [[x,1],[x+t+ai,-1]])
+    for(let y=y0+2;y+t<=y1;y+=t) if(inPoly(b,[[xx,y],[xx+t,y],[xx+t,y+t],[xx,y+t]])) out.push({x:xx+t/2,y:y+t/2,face});
+  return out; }
+const SLOTS={}, slots=id=>SLOTS[id]||(SLOTS[id]=(byId[id].kind==='boot'?bootSlots:byId[id].kind==='food'?foodSlots:parkSlots)(id));
+const PAL=['#ef5b5b','#f59e3b','#f6cf45','#4fbf86','#47a2e0','#a874e2','#f27cb4'];
+// อาคาร: base · h สูง · roof/wall สี · sign = แถบป้ายรอบตึก · ac = แอร์บนหลังคา
+const BLD=[
+  {b:R(408,146,100,44),h:30,sign:'#2b5fae'},
+  {b:R(424,205,72,82),h:24,sign:'#e8742c'},
+  {b:R(545,136,100,50),h:28,sign:'#4b5563'},
+  {b:R(663,130,95,62),h:28,sign:'#1e7a4a'},
+  {b:[[780,126],[995,116],[990,198],[780,186]],h:30,sign:'#d93a3a',ac:[[995-20,175]]},
+  {b:R(578,205,40,225),h:22},
+  {b:R(622,205,58,233),h:24,roof:'#f3c35f'},
+  {b:R(705,215,43,230),h:26,sign:'#2b5fae'},
+  {b:R(420,455,158,160),h:34,roof:'#f6c39a',sign:'#e2671c',ac:[[450,480],[545,480],[500,585]],zone:'food-in'},
+  {b:R(420,617,98,38),h:20,sign:'#22a6b3'},
+  {b:R(520,617,60,38),h:20,roof:'#3a3f46',sign:'#f6cf45'},
+  {b:[[592,515],[812,548],[812,735],[592,735]],h:26,roof:'#e3dbcf',ac:[[650,600],[740,640]]},
+  {b:R(688,468,148,72),h:18,roof:'#2b2f35',wall:'#3a3f46',sign:'#28b48a'},
+  {b:R(862,470,70,45),h:20,roof:'#fbe3ea',sign:'#d23c5b'},
+  {b:[[1085,108],[1195,102],[1100,718],[1000,718]],h:46,roof:'#d3d9e0',sign:'#1f4e8c',ac:[[1110,250],[1080,450],[1060,620]]},
+  {b:R(1012,262,33,110),h:16,roof:'#e3ebf3'},
+  {b:[[1185,100],[1295,95],[1282,192],[1183,188]],h:26,sign:'#ef7d1a'},
+  {b:[[1400,90],[1510,86],[1470,502],[1362,488]],h:38,roof:'#cdd4dc'},
+  {b:[[1510,86],[1715,79],[1680,407],[1480,380]],h:50,roof:'#eceef0',sign:'#d7262f',ac:[[1560,130],[1650,125],[1600,320],[1540,345]]},
+  {b:[[792,760],[832,762],[806,1190],[764,1188]],h:14,roof:'#c7ced6'},
+  {b:[[985,1248],[1080,1250],[1062,1392],[972,1388]],h:22}
+];
+// ป้ายชื่อ [x, y, สูง, ข้อความ, ชนิด, โซน]
+const LBL=[
+  [434,300,40,'🍢 สตรีทฟู้ด','zone food','food-sf1'],[947,560,60,'🍢 สตรีทฟู้ด','zone food','food-sf2'],
+  [499,535,50,'🍜 ศูนย์อาหาร','zone food','food-in'],[1172,520,30,'🚗 เปิดท้าย','zone boot','boot-a'],
+  [985,960,30,'🚗 เปิดท้าย','zone boot','boot-b'],[878,330,20,'🎪 ลานกิจกรรม','zone event','event'],
+  [522,378,4,'🅿️','zone park','park-1'],[330,560,4,'🅿️','zone park','park-2'],[1214,330,4,'🅿️','zone park','park-3'],
+  [1520,700,4,'🅿️ ลานจอด','zone park','park-4'],[880,1320,4,'🅿️ ลานจอด','zone park','park-5']
+];
+// โลโก้บนหลังคา (ตัดจากแผนที่ตลาด 28 ส.ค. 69 · โฟลเดอร์ logos/) [ไฟล์, x, y, กว้าง, สูงหลังคา, มุมขอบตึก]
+const ROOF_LOGO=[['bbl',432,170,34,30],['kbank',482,170,34,30],['dms',570,163,44,28],['studio7',620,163,44,28],['starbucks',710,163,48,28],
+  ['banana',806,156,38,30,-.047],['pizzahut',852,154,34,30,-.047],['kfc',896,152,34,30,-.047],['jetts',944,150,40,30,-.047],
+  ['autobacs',1236,146,72,26],['makro',1597,236,160,50,-.034],['zeed',460,226,56,24],['711',460,264,30,24],['chiwlao',598,232,32,22],['wishco',762,504,118,18],['swensens',897,492,58,20]];
+// ร้าน/จุดที่ไม่มีโลโก้ในผัง = ป้ายวาดเอง [บรรทัด, x, y, กว้าง, สูงหลังคา, พื้น, ตัวอักษร]
+const ROOF_TXT=[[['📍 สำนักงาน','จองที่นี่'],550,636,54,20,'#f6cf45','#2b2f35'],[['SCB','ไทยพาณิชย์'],726,240,40,26,'#4e2a84','#ffffff'],
+  [['J.M. Steel'],1112,300,74,46,'#1f4e8c','#ffffff'],[['ถ.มิตรภาพ'],640,92,90,-.2,null,'rgba(255,255,255,.85)']];
+
+// ══ ราคา ══
+const now=new Date(), md=(now.getMonth()+1)*100+now.getDate();
+const season=(md>=413&&md<=1031)?'low':'high', other=season==='low'?'high':'low';
+const wk=[5,6,0].includes(now.getDay())?1:0, dayTxt=wk?'ศ.–อา.':'จ.–พฤ.';
+const range=z=>{ if(!z.tiers) return null; const v=z.tiers.map(t=>t[season][wk]), a=Math.min(...v), b=Math.max(...v); return a===b?`${a}`:`${a}–${b}`; };
+const yearRange=z=>{ const v=z.tiers.flatMap(t=>[...t.low,...t.high]); return `${Math.min(...v)}–${Math.max(...v)}`; };
+const table=(z,s)=>`<p class="tt">${SEASON[s]}${s===season?' · ตอนนี้':''}</p><table><thead><tr><th>รหัสล็อก</th><th>จ.–พฤ.</th><th>ศ.–อา.</th></tr></thead><tbody>${
+  z.tiers.map(t=>`<tr${s===season?' class="cur"':''}><td>${t.codes}</td><td><b>${t[s][0]}</b></td><td><b>${t[s][1]}</b></td></tr>`).join('')}</tbody></table>`;
+
+// ══ รูปจริง + ภาพอธิบายล็อก ══
+// รูปถ่ายจากหน้าเว็บ "มาขาย" ของตลาด (ย่อไว้ใน photos/) · เป็นภาพตัวอย่างของหมวด ไม่ใช่โซนนั้นเป๊ะ
+const PH={food:[['food-front','หน้าอาคารศูนย์อาหาร'],['food-road','กลางถนน · ไม่มีหลังคา'],['food-2lot','ร้านจอง 2 ล็อก'],['food-3lot','ร้านจอง 3 ล็อก'],['food-grill','ปิ้ง ย่าง'],['food-night','ช่วงค่ำ']],
+  'food-in':[['food-inside','ในอาคารศูนย์อาหาร'],['food-front','ปิ้ง ย่าง ทอด → หน้าอาคาร']],
+  boot:[['boot-aerial','ลานเปิดท้ายมุมสูง'],['boot-crowd','ร้านเปิดท้าย'],['boot-clothes','เสื้อผ้า'],['boot-shoes','รองเท้า'],['boot-glasses','แว่นตา'],['boot-accessory','เครื่องประดับ']],
+  event:[['event-concert','คอนเสิร์ตบนลาน'],['event-aerial','งานบนลาน มุมสูง']]};
+const photos=z=>{ const a=PH[z.id]||PH[z.kind]; if(!a) return '';
+  return `<div class="sec"><p class="sec-h">📷 บรรยากาศจริง <small style="font-weight:400;color:var(--mute)">· แตะดูใหญ่</small></p><div class="photos">${
+    a.map(([f,c])=>`<figure data-c="${c}"><img src="${A('photos/'+f+'.jpg')}" alt="${c}" loading="lazy"><figcaption>${c}</figcaption></figure>`).join('')}</div></div>`; };
+// ภาพจัดล็อก = เรนเดอร์จาก Blender (blender/lot-guide.py) · ป้ายวางตามตำแหน่ง x จริง: (กลางกลุ่ม − ขอบซ้ายกรอบ) ÷ กว้างกรอบ
+// อาหาร กรอบ −0.8…7.45 ม. · เปิดท้ายแนวตั้ง −1…10.2 · แนวนอน −1…19.8 (ตรงกับ FOOD_FRAME / BOOT_*_FRAME ในสคริปต์)
+const shot=(f,alt,caps)=>`<figure class="lot"><img src="${A('photos/lot-'+f+'.jpg')}" alt="${alt}"><div class="caps">${
+  caps.map(([x,a,b])=>`<span style="left:${x}%"><b>${a}</b>${b?`<small>${b}</small>`:''}</span>`).join('')}</div></figure>`;
+const dgFood=()=>shot('food','โต๊ะ 75 × 75 ซม. จอง 1 ถึง 3 ล็อก โต๊ะต่อกัน',[[14.2,'1 ล็อก','โต๊ะ 1 ตัว'],[41.8,'2 ล็อก','โต๊ะต่อกัน'],[76.7,'3 ล็อก','โต๊ะต่อกัน']]);
+const dgBoot=()=>shot('boot-v','จอง 1–2 ล็อก จอดรถแนวตั้ง',[[19.6,'1 ล็อก','จอดแนวตั้ง'],[69.6,'2 ล็อก','จอดแนวตั้ง']])
+  +shot('boot-h','จอง 3–4 ล็อก จอดรถแนวนอนได้',[[22.1,'3 ล็อก','จอดแนวนอนได้'],[72.1,'4 ล็อก','จอดแนวนอนได้']])
+  +`<div class="dg-lg"><span><i style="background:#c9b0f2;border-color:#fff"></i>ที่ขาย 3.5 ม. (หน้า)</span><span><i style="background:#9aa0a6;border-color:#fff"></i>จอดรถ 4.5 ม. (หลัง)</span><span><i style="background:#f2c230;border-color:#f2c230"></i>ท้ายล็อก</span></div>
+  <p class="note">ล็อกกว้าง 2.4 ม. · ท้ายรถหันเข้าที่ขาย</p>`;
+const diagram=z=>z.kind==='food'||z.kind==='boot'?`<div class="sec"><p class="sec-h">📐 จัดล็อกยังไง</p>${z.kind==='food'?dgFood():dgBoot()}</div>`:'';
+
+// ══ แผงรายละเอียด · ตัวกรอง ══
+let sel=null, filt='all';
+const mark=id=>document.querySelectorAll('.lb.zone,.card,.zg,.pill[data-id]').forEach(e=>e.classList.toggle('sel',e.dataset.id===id));
+const AREA_NOTE='<p class="note">พื้นที่ ≈ คำนวณจากผัง เทียบพื้นที่ตลาดรวม 88 ไร่</p>';
+const EMPTY='<div class="empty"><b>👆</b>แตะโซนบนผัง หรือเลือกจาก "ทุกโซน" ด้านล่าง<br>เพื่อดูว่าขายอะไรได้ ราคา และวิธีจอง</div>';
+const tiles=(a,c)=>`<div class="icons">${a.map(([e,t])=>`<div class="ic ${c}"><i aria-hidden="true">${e}</i><span>${t}</span></div>`).join('')}</div>`;
+const can=z=>`<p class="can-h ok">✅ ขายได้</p>${tiles(z.ok,'ok')}${z.no?`<p class="can-h no">🚫 ห้ามขาย${z.noTo?` <small>→ ${z.noTo}</small>`:''}</p>${tiles(z.no,'no')}`:''}`;
+// ชิ้นส่วนแผง: หัว · กล่องข้อมูลสั้น · ขั้นตอน · หัวข้อพับได้ · ปุ่มโทร
+const head=z=>`<span class="tag ${z.kind}">${KIND[z.kind]}</span><h2>${z.name}</h2><p class="where">📍 ${z.where}</p>`;
+const facts=a=>`<div class="sec facts">${a.map(([e,k,v,w])=>`<div class="fact${w?' w':''}"><small>${e} ${k}</small><b>${v}</b></div>`).join('')}</div>`;
+const flow=a=>`<div class="sec"><p class="sec-h">วิธีจอง</p><ol class="flow">${a.map(([t,d])=>`<li><div><b>${t}</b><span>${d}</span></div></li>`).join('')}</ol></div>`;
+const acc=a=>`<div class="acc">${a.map(([t,body])=>`<details><summary>${t}</summary>${Array.isArray(body)?`<ul>${body.map(x=>`<li>${x}</li>`).join('')}</ul>`:`<div class="db">${body}</div>`}</details>`).join('')}</div>`;
+const calls=(tel,ig)=>{ const [t1,t2]=tel.split(' · ');
+  return `<div class="actions"><a class="btn pri" href="tel:${t1.replace(/-/g,'')}">📞 ${t1}</a>${ig?`<a class="btn" href="https://www.instagram.com/${ig}/" target="_blank" rel="noopener">IG โซน</a>`:t2?`<a class="btn" href="tel:${t2.replace(/-/g,'')}">📞 ${t2}</a>`:''}</div>`; };
+function panel(z){
+  const P_=document.getElementById('panel'); P_.scrollTop=0;
+  if(z.kind==='park'){ P_.innerHTML=`${head(z)}
+    <div class="sec today park"><small>จอดฟรี · ได้ประมาณ</small><b>${slots(z.id).length.toLocaleString('th-TH')}</b> <span class="u">คัน</span></div>
+    ${facts([['🚗','ช่องจอด','2.5 × 5 ม.'],['🕙','เวลา','10:00–23:00 ?'],['🧭','ใกล้','<small style="font-size:14px">'+z.near+'</small>',1],['🗺️','พื้นที่',fmtM2(zoneM2(z.id)),1]])}
+    <p class="warn">? จำนวนคันนับช่องจากผัง</p>${AREA_NOTE}`; return; }
+  if(z.kind==='event'){ P_.innerHTML=`${head(z)}<div class="sec">${can(z)}</div>
+    <div class="sec today event"><small>ราคา</small><b style="font-size:28px">ตามงาน</b> <span class="u">· สอบถามสำนักงาน</span></div>
+    ${photos(z)}
+    ${facts([['📐','ขนาด','ทั้งลานหรือบางส่วน'],['🛠️','วัน Setup','ก่อนงานได้'],['🏆','เคยจัด',z.past,1],['🗺️','พื้นที่',fmtM2(zoneM2(z.id)),1]])}
+    ${calls(z.tel)}
+    <p class="warn">? ปกติเป็นลานจอดรถ · ชื่อลานบนเว็บเดิม (ไทมุง / หน้าทาวเวอร์ / น้ำพุม้า) ยังไม่รู้ว่าตรงกับลานนี้ไหม</p>${AREA_NOTE}`; return; }
+  const area=z.kind==='boot'?['🗺️','ล็อกตามผัง',`≈ ${slots(z.id).length} ล็อก`]:['🗺️','พื้นที่โซน',fmtM2(zoneM2(z.id))];
+  P_.innerHTML=`${head(z)}<div class="sec">${can(z)}</div>
+    <div class="sec today ${z.kind}"><small>ราคาวันนี้ · ${dayTxt} · จองผ่านแอป</small><b>${range(z)}</b> <span class="u">บาท/ล็อก/วัน</span>
+      <small class="sub">รวมค่าส่วนกลาง 10 บาท (ห้องน้ำ รถรับส่ง เก็บขยะ ไฟส่องสว่าง รปภ.)</small></div>
+    ${photos(z)}
+    ${facts([...z.facts,['⚡','ไฟฟ้า',ELEC],area])}
+    ${diagram(z)}
+    ${flow(z.steps)}
+    ${acc([['📋 เงื่อนไข',z.rules],['💸 คืนเงิน',z.refund],['🗓️ ราคาทั้งปี',table(z,season)+table(z,other)]])}
+    ${calls(z.tel,z.ig)}
+    <p class="warn">? รหัสล็อกไหนอยู่โซนนี้ ยังรอยืนยัน · ${z.ask}</p>${AREA_NOTE}`;
+}
+function show(id,fromMap){
+  sel=id; const z=byId[id]; mark(id); panel(z);
+  if(W3.ok){ focusZone(id); if(!fromMap&&matchMedia('(max-width:860px)').matches) document.getElementById('stage').scrollIntoView({behavior:'smooth',block:'start'}); }
+  else if(matchMedia('(max-width:860px)').matches) document.getElementById('panel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function setFilter(f){
+  filt=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.f===f));
+  const on=id=>f==='all'||byId[id].kind===f;
+  document.querySelectorAll('.lb.zone').forEach(e=>e.classList.toggle('off',!on(e.dataset.id)));
+  document.querySelectorAll('#map [data-id]').forEach(e=>e.classList.toggle('dim',!on(e.dataset.id)));
+  document.querySelectorAll('.card').forEach(c=>c.hidden=!on(c.dataset.id));
+  if(W3.ok){ for(const id in W3.zones) W3.zones[id].visible=on(id); req(); }
+  if(sel&&!on(sel)){ sel=null; mark(null); closeHolo();
+    document.getElementById('panel').innerHTML=EMPTY; }
+}
+
+// ══ ผัง 3 มิติ (three.js) · กล้องลอยกลางตลาดมองลง แดดเที่ยง · ไม่หมุน ══
+const W3={ok:false};
+const CXW=1040, CZW=712, reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const js=src=>new Promise((ok,no)=>{ const s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=no; document.head.appendChild(s); });
+const EX='https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/';
+async function load3(){ if(!window.THREE) await js('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js');
+  try{ await js(EX+'loaders/GLTFLoader.js'); }catch(e){} }
+// โมเดลฟรี Kenney (CC0) ในโฟลเดอร์ models/ · โหลดไม่ได้ (เปิดไฟล์ตรง / ไม่มีไฟล์) = ใช้รูปทรงที่สร้างเอง
+const MODELS={sedan:'car/sedan',suv:'car/suv',van:'car/van',hatch:'car/hatchback-sports',taxi:'car/taxi',truck:'car/truck',cone:'car/cone',
+  stallR:'town/stall-red',stallG:'town/stall-green',stool:'town/stall-stool',cart:'town/cart',lantern:'town/lantern',tree:'town/tree-high-round',tree2:'town/tree',
+  tentW:'blender/tent-white',cartF:'blender/food-cart',umbT:'blender/umbrella',stageT:'blender/stage',
+  ...Object.fromEntries('abcefijkmnq'.split('').map(c=>['p'+c,'people/character-'+c]))};
+// ชุดของตลาดไทยที่ปั้นใน Blender (blender/thai-set.py) = ค่าเริ่มต้น (เจ้าของเลือก 23 ต.ค.) · ?thai=0 = แบบเดิม
+const THAI=new URLSearchParams(location.search).get('thai')!=='0';
+const isCh=k=>/^p[a-z]$/.test(k);
+async function loadModels(){ const M={}; if(!THREE.GLTFLoader||(location.protocol==='file:'&&!window.ASSETS)) return M;
+  const mgr=new THREE.LoadingManager(); mgr.setURLModifier(A); const L=new THREE.GLTFLoader(mgr);
+  // อ่านเป็นไบต์เองแล้ว parse พร้อมโฟลเดอร์จริง → รูปพื้นผิว (Textures/colormap.png) ถูกแปลงผ่าน A() ได้
+  await Promise.all(Object.entries(MODELS).map(([k,f])=>fetch(A('models/'+f+'.glb')).then(r=>{ if(!r.ok) throw r.status; return r.arrayBuffer(); })
+    .then(buf=>new Promise((ok,no)=>L.parse(buf,'models/'+f.split('/')[0]+'/',ok,no))).then(g=>{ M[k]=g; }).catch(()=>{})));
+  for(const k in M) M[k].scene.traverse(o=>{ if(o.isMesh){ const m=o.material; m.metalness=0; m.roughness=.75; m.userData.glb=true;
+    if(m.map){ m.map.magFilter=THREE.NearestFilter; m.map.anisotropy=4; } } });
+  return M; }
+function stripeTex(n,a,b){ const c=document.createElement('canvas'); c.width=256; c.height=8; const x=c.getContext('2d');
+  for(let i=0;i<n;i++){ x.fillStyle=i%2?b:a; x.fillRect(i*256/n,0,256/n,8); }
+  const t=new THREE.CanvasTexture(c); t.wrapS=THREE.RepeatWrapping; t.encoding=THREE.sRGBEncoding; return t; }
+function noiseTex(base,amt){ const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d'); x.fillStyle=base; x.fillRect(0,0,256,256);
+  for(let i=0;i<5000;i++){ x.fillStyle=`rgba(${Math.random()<.5?'0,0,0':'255,255,255'},${Math.random()*amt})`; x.fillRect(Math.random()*256,Math.random()*256,2,2); }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.encoding=THREE.sRGBEncoding; return t; }
+function pTex(){ const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d');
+  x.fillStyle='#2f7bd9'; x.fillRect(0,0,64,64); x.fillStyle='#fff'; x.font='bold 46px sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('P',32,35);
+  const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; return t; }
+
+function build3(M={}){
+  const T=THREE, stage=document.getElementById('stage');
+  const Rr=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+  Rr.setPixelRatio(Math.min(2,window.devicePixelRatio||1)); Rr.outputEncoding=T.sRGBEncoding;
+  Rr.toneMapping=T.ACESFilmicToneMapping; Rr.toneMappingExposure=1.0;
+  Rr.shadowMap.enabled=true; Rr.shadowMap.type=T.PCFSoftShadowMap; Rr.shadowMap.autoUpdate=false;
+  stage.prepend(Rr.domElement);
+  const S=new T.Scene(); S.background=new T.Color('#93b86f');
+  const cam=new T.PerspectiveCamera(52,1,5,9000); cam.up.set(0,0,-1);
+  S.add(new T.HemisphereLight('#eef4ff','#7d8f68',.55));
+  const sun=new T.DirectionalLight('#fff1d8',1.35); sun.position.set(CXW-620,1500,CZW+420); sun.target.position.set(CXW,0,CZW); S.add(sun,sun.target);
+  const small=matchMedia('(max-width:860px)').matches, sc=sun.shadow.camera;
+  sun.castShadow=true; sc.left=-980; sc.right=980; sc.top=980; sc.bottom=-980; sc.near=300; sc.far=3600;
+  sun.shadow.mapSize.set(small?2048:4096,small?2048:4096); sun.shadow.bias=-.0004; sun.shadow.normalBias=.6;
+
+  const MC={}, mat=(c,o={})=>{ const k=c+JSON.stringify(o); return MC[k]||(MC[k]=new T.MeshStandardMaterial(Object.assign({color:c,roughness:.82,metalness:0},o))); };
+  const shp=pts=>{ const s=new T.Shape(); pts.forEach(([x,y],i)=>i?s.lineTo(x,y):s.moveTo(x,y)); s.closePath(); return s; };
+  // ยกรูปจากผังขึ้นเป็นแท่ง: ผัง (x,y) → โลก (x, y สูง, z=y)
+  const ext=(s,depth,top,m,cast=true)=>{ const me=new T.Mesh(new T.ExtrudeGeometry(s,{depth,bevelEnabled:false}),m);
+    me.rotation.x=Math.PI/2; me.position.y=top; me.castShadow=cast; me.receiveShadow=true; S.add(me); return me; };
+  const box=(w,h,d,x,y,z,m,ry=0,cast=true)=>{ const me=new T.Mesh(new T.BoxGeometry(w,h,d),m); me.position.set(x,y+h/2,z); me.rotation.y=ry; me.castShadow=cast; me.receiveShadow=true; S.add(me); return me; };
+  // ของซ้ำๆ = InstancedMesh (วาดทีเดียว)
+  const IL={}, I=(key,geo,m,it)=>{ (IL[key]=IL[key]||{geo,m,list:[]}).list.push(it); };
+  const flushI=()=>{ const o=new T.Object3D(), c=new T.Color();
+    for(const k in IL){ const {geo,m,list}=IL[k], im=new T.InstancedMesh(geo,m,list.length);
+      list.forEach((it,i)=>{ o.position.set(...it.p); o.rotation.set(...(it.r||[0,0,0])); o.scale.set(...(it.s||[1,1,1])); o.updateMatrix(); im.setMatrixAt(i,o.matrix); if(it.c) im.setColorAt(i,c.set(it.c).convertSRGBToLinear()); });
+      if(im.instanceColor) im.instanceColor.needsUpdate=true; im.castShadow=!/^(line|dash)/.test(k); im.receiveShadow=true; S.add(im); } };
+  // โมเดล GLB → ชิ้นส่วน (อบตำแหน่งในไฟล์ลงรูปทรงแล้ว) ใช้วางแบบ instance ได้
+  const PT={};
+  for(const k in M){ if(isCh(k)) continue; const gs=M[k].scene; gs.updateMatrixWorld(true); const parts=[];
+    gs.traverse(o=>{ if(o.isMesh){ const geo=o.geometry.clone(); geo.applyMatrix4(o.matrixWorld); parts.push({geo,m:o.material}); } });
+    PT[k]={parts,bb:new T.Box3().setFromObject(gs)}; }
+  // คน: อบท่า (ยืน / เดิน) ลงชิ้นส่วน แล้ววางแบบ instance เหมือนของอื่น
+  const PPL=[];
+  for(const k in M){ if(!isCh(k)) continue; const g=M[k];
+    [['idle',.3],['walk',.25]].forEach(([n,t],j)=>{ const o=g.scene.clone(), cl=g.animations.find(a=>a.name===n);
+      if(cl){ const mx=new T.AnimationMixer(o); mx.clipAction(cl).play(); mx.setTime(t*cl.duration); }
+      o.updateMatrixWorld(true); const parts=[];
+      o.traverse(m=>{ if(m.isMesh){ const geo=m.geometry.clone(); geo.applyMatrix4(m.matrixWorld); parts.push({geo,m:m.material}); } });
+      PT[k+'_'+j]={parts,bb:new T.Box3().setFromObject(o)}; PPL.push(k+'_'+j); }); }
+  W3.PT=PT; W3.M=M;
+  let seed=7; const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  // G(ชื่อ, [x,y,z], หมุน, [sx,sy,sz]) วางโมเดลให้ฐานแตะพื้น · ไม่มีโมเดล = false
+  const G=(k,p,ry,s)=>{ const q=PT[k]; if(!q) return false;
+    q.parts.forEach((pa,j)=>I(k+j,pa.geo,pa.m,{p:[p[0],p[1]-q.bb.min.y*s[1],p[2]],r:[0,ry,0],s})); return true; };
+  const CARS=['sedan','suv','van','hatch','taxi','truck'].filter(k=>PT[k]);
+  const FACE=Math.PI/2, CAR_RY=-Math.PI/2; // ทิศหน้าร้าน / หน้ารถ ของโมเดล Kenney
+
+  // ── พื้น ──
+  const grass=new T.Mesh(new T.PlaneGeometry(9000,9000),new T.MeshStandardMaterial({color:'#93b86f',roughness:1}));
+  grass.rotation.x=-Math.PI/2; grass.position.set(CXW,-1,CZW); grass.receiveShadow=true; S.add(grass);
+  const lotTex=noiseTex('#9ea2a7',.07); lotTex.repeat.set(.02,.02);
+  const lotM=new T.MeshStandardMaterial({color:'#ffffff',map:lotTex,roughness:.95});
+  ext(shp(SITE),4,2,lotM,false); ext(shp(ANNEX),4,2,lotM,false);
+  ext(shp(ROAD),3,1.5,mat('#4a4e55',{roughness:.95}),false);
+  const roadA=Math.atan2(47-120,1800-320);
+  for(let t=0;t<1;t+=.024){ const x=320+(1800-320)*t, z=120+(47-120)*t; I('dash',new T.BoxGeometry(22,.4,2.6),mat('#f2d35b'),{p:[x,1.7,z],r:[0,-roadA,0]}); }
+  // ถนนซอยข้างตลาด (แถบเทาเข้มในแผนที่ทางการ · วัดจากรูป) [x บน, y บน, x ล่าง, y ล่าง, กว้าง]
+  // เส้นกลางยาวเลยขอบแผนที่ = ถนนออกไปหลังตลาด จึงต่อให้ยาวออกนอกภาพ ไม่ให้ดูเหมือนขาดกลางสนาม
+  [[397,88,397,775,18],[1311,60,876,2400,14],[1728,60,1634,919,19]].forEach(([x0,y0,x1,y1,w])=>{
+    const L=Math.hypot(x1-x0,y1-y0), nx=(y1-y0)/L*w/2, ny=-(x1-x0)/L*w/2;
+    ext(shp([[x0-nx,y0-ny],[x0+nx,y0+ny],[x1+nx,y1+ny],[x1-nx,y1-ny]]),3,2.3,mat('#4a4e55',{roughness:.95}),false); });
+  // ช่องจอด: เส้นขาวตามช่องจริง 2.5 × 5 ม. (ลานจอด + ลานกิจกรรมซึ่งปกติเป็นลานจอด)
+  const LINE_M=mat('#ffffff',{roughness:.7}), lineG=new T.BoxGeometry(.15*U,.3,5*U), sepG=new T.BoxGeometry(2.5*U,.3,.15*U);
+  const PARKS=ZONES.filter(z=>z.kind==='park'||z.kind==='event').map(z=>z.id);
+  PARKS.forEach(id=>slots(id).forEach(q=>{ I('line',lineG,LINE_M,{p:[q.x-1.25*U,2.1,q.y]}); if(q.f) I('line2',sepG,LINE_M,{p:[q.x,2.1,q.y-2.5*U]}); }));
+
+  // ── อาคาร ──
+  const glassM=mat('#6d93b3',{roughness:.22,metalness:.35});
+  for(const B of BLD){ const {b,h}=B, roof=B.roof||'#e8eaed', wall=B.wall||'#f6f4f0';
+    const core=ext(shp(b),h,h,[mat(roof),mat(wall)]);
+    const c=cen(b), inner=b.map(p=>new T.Vector2(c[0]+(p[0]-c[0])*.93,c[1]+(p[1]-c[1])*.93)), ring=shp(b); ring.holes.push(new T.Path(inner));
+    ext(ring,3.5,h+3.5,mat(wall));
+    const A=area(b);
+    b.forEach((a,i)=>{ const q=b[(i+1)%b.length], dx=q[0]-a[0], dy=q[1]-a[1], L=Math.hypot(dx,dy); if(L<10) return;
+      const n=A>0?[dy/L,-dx/L]:[-dy/L,dx/L], ang=-Math.atan2(dy,dx), mx=(a[0]+q[0])/2, my=(a[1]+q[1])/2;
+      const band=(hh,y,d,m)=>box(L*.97,hh,d,mx+n[0]*d/2,y,my+n[1]*d/2,m,ang,false);
+      band(h*.22,h*.3,1.2,glassM);
+      if(B.sign) band(h*.15,h*.72,1.8,mat(B.sign,{roughness:.55}));
+    });
+    (B.ac||[]).forEach(([x,y])=>{ box(13,6,10,x,h,y,mat('#f2f3f5')); I('fan',new T.CylinderGeometry(3.2,3.2,1,16),mat('#4f555d'),{p:[x,h+6.4,y]}); });
+  }
+  // โลโก้ร้านบนหลังคา · โหลดเสร็จค่อยตั้งสัดส่วนตามรูป
+  const TL=new T.TextureLoader(), decalG=new T.PlaneGeometry(1,1).rotateX(-Math.PI/2);
+  ROOF_LOGO.forEach(([n,x,y,w,h,ang=0])=>TL.load(A('logos/'+n+'.png'),tx=>{ tx.encoding=T.sRGBEncoding; tx.anisotropy=8;
+    const m=new T.MeshStandardMaterial({map:tx,transparent:true,roughness:.55}); m.userData.lin=true;
+    const me=new T.Mesh(decalG,m); me.scale.set(w,1,w*tx.image.height/tx.image.width); me.position.set(x,h+.6,y); me.rotation.y=-ang; me.receiveShadow=true;
+    S.add(me); req(); }));
+  const FONT=getComputedStyle(document.body).fontFamily;
+  ROOF_TXT.forEach(([L,x,y,w,h,bg,fg])=>{ const c=document.createElement('canvas'), H=150+100*(L.length-1); c.width=512; c.height=H; const g=c.getContext('2d');
+    if(bg){ g.fillStyle=bg; g.beginPath(); g.roundRect?g.roundRect(4,4,504,H-8,36):g.rect(4,4,504,H-8); g.fill(); }
+    g.fillStyle=fg; g.textAlign='center'; g.textBaseline='middle';
+    L.forEach((t,i)=>{ let f=i?64:88; g.font=`700 ${f}px ${FONT}`; while(g.measureText(t).width>460&&f>30){ f-=4; g.font=`700 ${f}px ${FONT}`; } g.fillText(t,256,75+i*100); });
+    const tx=new T.CanvasTexture(c); tx.encoding=T.sRGBEncoding; tx.anisotropy=8;
+    const m=new T.MeshStandardMaterial({map:tx,transparent:true,roughness:.55}); m.userData.lin=true;
+    const me=new T.Mesh(decalG,m); me.scale.set(w,1,w*H/512); me.position.set(x,h+.6+(bg?0:2),y); me.receiveShadow=true; S.add(me); });
+  // หลังคาสูง
+  const metal=new T.MeshStandardMaterial({color:'#b9c4cf',roughness:.45,metalness:.5,map:stripeTex(24,'#ffffff','#c9d1d9')});
+  [[845,548],[888,548],[845,692],[888,692],[845,620],[888,620]].forEach(([x,y])=>I('post',new T.CylinderGeometry(1.4,1.4,1,8),mat('#7b8088',{metalness:.4}),{p:[x,2+19,y],s:[1,38,1]}));
+  { const m=box(62,2,166,866,40,620,metal); m.material.map.repeat.set(1,1); m.rotation.y=Math.PI/2; m.scale.set(166/62,1,62/166); }
+
+  // ── สตรีทฟู้ด: เต็นท์ลายทาง ──
+  const tentM=new T.MeshStandardMaterial({color:'#ffffff',roughness:.7,map:stripeTex(8,'#ffffff','#d6d6d6')});
+  const coneG=new T.ConeGeometry(1,1,4,1); coneG.rotateY(Math.PI/4);
+  const legG=new T.CylinderGeometry(.6,.6,1,6), legM=mat('#80868e',{metalness:.4});
+  const tableG=new T.BoxGeometry(1,1,1), woodM=mat('#b88a5e'), bulbM=new T.MeshStandardMaterial({color:'#fff3c4',emissive:'#ffd36a',emissiveIntensity:.9});
+  const potG=new T.CylinderGeometry(1,1,1,10);
+  let k=0;
+  const tent=(x,y,col,s,face=0)=>{ const a=s/2-.3;
+    if(THAI&&k%5===2&&G('cartF',[x,2,y],face,[U,U,U])) return;
+    if(THAI&&G('tentW',[x,2,y],face,[s/3.04,s/3.04,s/3.04])){ I('table',tableG,woodM,{p:[x+Math.sin(face)*s*.3,2+.37*U,y+Math.cos(face)*s*.3],r:[0,face,0],s:[1.5*U,.74*U,.75*U]}); return; }
+    if(G(k%2?'stallR':'stallG',[x,2,y],face,[s,s*.8,s])){
+      I('pot',potG,mat('#5a5f66',{metalness:.5}),{p:[x,2+s*.42,y],s:[s*.09,s*.06,s*.09]}); return; }
+    I('tentRoof',coneG,tentM,{p:[x,2+s*.95,y],s:[s*.74,s*.3,s*.74],c:col});
+    [[-a,-a],[a,-a],[-a,a],[a,a]].forEach(([u,v])=>I('tentLeg',legG,legM,{p:[x+u,2+s*.4,y+v],s:[.4,s*.8,.4]}));
+    I('table',tableG,woodM,{p:[x,2+s*.13,y],s:[s*.6,s*.26,s*.4]}); };
+  // เต็นท์ 3 × 3 ม. ตามช่องในรูปโซน (ศูนย์อาหารอยู่ในตึก ไม่วาด)
+  ['food-sf1','food-sf2'].forEach(id=>slots(id).forEach(q=>{ tent(q.x,q.y,PAL[k%7],3*U*.94,q.face>0?FACE:-FACE); k++; }));
+  // ศูนย์อาหาร: ร่มหน้าตึก
+  for(let y=465;y<=600;y+=12) [592,603].forEach((x,j)=>{ const i=(y+j)%7; if(THAI&&G('umbT',[x,2,y],i,[U,U,U])) return; I('umb',new T.ConeGeometry(1,1,10,1),mat('#ffffff',{roughness:.7}),{p:[x,2+2.3*U,y],s:[1.3*U,.45*U,1.3*U],c:PAL[i]}); I('tentLeg',legG,legM,{p:[x,2+1.1*U,y],s:[.4,2.2*U,.4]}); });
+
+  // ── เปิดท้าย: รถเปิดท้าย + แผงของ ──
+  const CAR=['#f4f5f7','#c9ced6','#2f3542','#b8333a','#2d5fa8','#e6e1d6','#f4f5f7','#8d939b'];
+  const bG=new T.BoxGeometry(1,1,1), paint=mat('#ffffff',{roughness:.35,metalness:.25}), glass2=mat('#1f2a36',{roughness:.15,metalness:.5});
+  const wheelG=new T.CylinderGeometry(2.4,2.4,2,12); wheelG.rotateX(Math.PI/2);
+  const KC=k_=>4.4*U/(PT[k_].bb.max.z-PT[k_].bb.min.z);
+  // รถ 1 คัน: หน้ารถ +z ของโมเดล → หมุน ry
+  const carAt=(x,y,ry,i)=>{ if(CARS.length){ const k_=CARS[i%CARS.length], c=KC(k_); G(k_,[x,2,y],ry,[c,c,c]); return; }
+    const c=CAR[i%8], sx=Math.abs(Math.sin(ry))>.5; I('body',bG,paint,{p:[x,2+.9*U,y],r:[0,ry,0],s:[1.8*U,1.1*U,4.4*U],c}); I('cabin',bG,glass2,{p:[x,2+1.75*U,y],r:[0,ry,0],s:[1.6*U,.6*U,2.2*U]}); };
+  // ล็อกเปิดท้าย: รถฝั่งใน · ผ้าใบ/ของ/ราว ฝั่งทางเดิน
+  const bootLot=(q,i)=>{ const d=q.dir, cx=q.x-d*1.75*U, sx=q.x+d*2.25*U, y=q.y;
+    carAt(cx,y,-d*Math.PI/2,i);
+    I('hatchK',bG,mat('#9fb4c6',{roughness:.25,metalness:.2}),{p:[cx+d*2.4*U,2+1.85*U,y],r:[0,0,d*.8],s:[.9*U,.05*U,1.5*U]});
+    I('tarp',bG,mat('#ffffff',{roughness:.9}),{p:[sx,2.2,y],s:[2.6*U,.05*U,2*U],c:PAL[i%7]});
+    for(let j=0;j<3;j++) I('goods',bG,mat('#ffffff',{roughness:.8}),{p:[sx-.6*U+j*.6*U,2+.2*U,y-.5*U+((i+j)%3)*.5*U],s:[.45*U,(.3+(j%2)*.2)*U,.45*U],c:PAL[(i+j*3)%7]});
+    if(i%3===0){ [-.9,.9].forEach(v=>I('rack',new T.CylinderGeometry(.5,.5,1,6),legM,{p:[sx+d*1.2*U,2+.8*U,y+v*U],s:[.6,1.6*U,.6]}));
+      I('rack',new T.CylinderGeometry(.5,.5,1,6),legM,{p:[sx+d*1.2*U,2+1.6*U,y],r:[Math.PI/2,0,0],s:[.6,1.9*U,.6]});
+      for(let j=0;j<4;j++) I('shirt',bG,mat('#ffffff',{roughness:.9}),{p:[sx+d*1.2*U,2+1.25*U,y-.65*U+j*.43*U],s:[.12*U,.65*U,.38*U],c:PAL[(i+j)%7]}); }
+    if(i%5===0){ I('umb',new T.ConeGeometry(1,1,10,1),mat('#ffffff',{roughness:.7}),{p:[sx,2+2.2*U,y],s:[1.2*U,.4*U,1.2*U],c:PAL[(i+3)%7]}); I('tentLeg',legG,legM,{p:[sx,2+1.1*U,y],s:[.4,2.2*U,.4]}); }
+  };
+  let ci=0;
+  ['boot-a','boot-b'].forEach(id=>slots(id).forEach(q=>{ if(rnd()<.88) bootLot(q,ci++); }));
+  // รถจอดตามช่องในลานจอด (ไม่ได้ขายของ) · ลานกิจกรรมจอดบางตา
+  PARKS.forEach(id=>slots(id).forEach((q,i)=>{ if(rnd()<(id==='event'?.22:.5)) carAt(q.x,q.y,q.f?0:Math.PI,ci++); }));
+
+  // ── คน (สูง 1.7 ม.) เดินตามทางเดิน ──
+  const SHIRT=['#ef5b5b','#3f7fd0','#f6cf45','#ffffff','#4fbf86','#2f3542','#f27cb4','#f59e3b'];
+  const person=(x,y,ry=rnd()*6.28)=>{
+    if(PPL.length){ const k_=PPL[Math.floor(rnd()*PPL.length)], q=PT[k_], s=1.7*U/(q.bb.max.y-q.bb.min.y); G(k_,[x,2,y],ry,[s,s,s]); return; }
+    const c=SHIRT[Math.floor(rnd()*8)];
+    I('pBody',new T.CylinderGeometry(.22*U,.28*U,1,8),mat('#ffffff',{roughness:.9}),{p:[x,2+.6*U,y],s:[1,1.2*U,1],c});
+    I('pHead',new T.SphereGeometry(.13*U,10,8),mat('#e0b38c',{roughness:.8}),{p:[x,2+1.5*U,y]}); };
+  ['food-sf1','food-sf2'].forEach(id=>slots(id).forEach(q=>{ if(rnd()<.45) person(q.x+q.face*(1.5+2+(rnd()-.5)*2.4)*U,q.y+(rnd()-.5)*2*U,rnd()<.5?0:Math.PI); }));
+  ['boot-a','boot-b'].forEach(id=>slots(id).forEach(q=>{ if(rnd()<.3) person(q.x+q.dir*(4+.8+rnd()*4)*U,q.y+(rnd()-.5)*2*U); }));
+  for(let i=0;i<30;i++) person(586+rnd()*24,462+rnd()*150);
+  for(let i=0;i<14;i++) person(470+rnd()*90,445+rnd()*8);
+
+  // ── ต้นไม้ · ป้ายจอด ──
+  const canG=new T.IcosahedronGeometry(1,1), leafM=new T.MeshStandardMaterial({color:'#ffffff',roughness:.9,flatShading:true});
+  const tree=(x,y,s)=>{ if(G(rnd()<.7?'tree':'tree2',[x,2,y],rnd()*6.28,[16*s,13*s,16*s])) return; I('trunk',new T.CylinderGeometry(1.4,1.8,1,6),mat('#7a5a3a'),{p:[x,2+5*s,y],s:[s,10*s,s]});
+    I('can',canG,leafM,{p:[x,2+15*s,y],s:[11*s,9*s,11*s],c:['#4f9a55','#5aa65d','#47904e'][Math.floor(rnd()*3)]});
+    I('can',canG,leafM,{p:[x+4*s,2+19*s,y-3*s],s:[7*s,6*s,7*s],c:'#6dbb67'}); };
+  [[748,214],[1020,212],[300,446],[300,600],[700,1290],[726,1360],[1040,1300],[1210,520],[1450,820],[1590,880],[1350,780],[600,705],[470,700],[880,744],[1150,1240],
+   [330,160],[360,180],[1230,240],[1620,470],[1680,640],[1560,420],[760,960],[740,1120],[1110,1350]].forEach(([x,y],i)=>tree(x,y,i%3?1:1.25));
+  const pM=[mat('#2f7bd9'),mat('#2f7bd9'),new T.MeshStandardMaterial({map:pTex(),roughness:.6}),mat('#2f7bd9'),mat('#2f7bd9'),mat('#2f7bd9')];
+  [[518,350],[880,322],[1210,310],[1325,605],[1548,638],[328,524],[872,1300]].forEach(([x,y])=>{
+    I('pPole',new T.CylinderGeometry(.5,.5,1,6),legM,{p:[x,2+1.6*U,y],s:[1,3.2*U,1]}); const s=box(1.4*U,.3*U,1.4*U,x,3.2*U,y,pM); s.castShadow=true; });
+
+  // ── พื้นโซน (กดได้) ──
+  W3.zones={}; W3.zoneMats={};
+  for(const id in ZG){ const z=byId[id], col=z.kind==='food'?'#ff7a2e':z.kind==='boot'?'#8b4dff':z.kind==='park'?'#2f7bd9':'#14b8a6', g=new T.Group();
+    const m=new T.MeshStandardMaterial({color:col,transparent:true,opacity:.26,roughness:1,emissive:col,emissiveIntensity:.25,depthWrite:false});
+    const fill=new T.Mesh(new T.ExtrudeGeometry(shp(ZG[id]),{depth:.6,bevelEnabled:false}),m); fill.rotation.x=Math.PI/2; fill.position.y=2.9; fill.userData.zone=id; g.add(fill);
+    const em=new T.MeshStandardMaterial({color:col,roughness:.6,emissive:col,emissiveIntensity:.35});
+    ZG[id].forEach((a,i)=>{ const q=ZG[id][(i+1)%ZG[id].length], L=Math.hypot(q[0]-a[0],q[1]-a[1]);
+      const e=new T.Mesh(new T.BoxGeometry(L+3,1.6,3),em); e.position.set((a[0]+q[0])/2,3.3,(a[1]+q[1])/2); e.rotation.y=-Math.atan2(q[1]-a[1],q[0]-a[0]); g.add(e); });
+    S.add(g); W3.zones[id]=g; W3.zoneMats[id]=m; W3.pick=(W3.pick||[]).concat(fill); }
+  flushI();
+  // สีที่เขียนเป็น hex = sRGB · r128 ตีเป็น linear → แปลงครั้งเดียว (สีจากไฟล์ GLB เป็น linear อยู่แล้ว ข้าม)
+  const lin=c=>c&&c.convertSRGBToLinear();
+  S.background&&lin(S.background);
+  S.traverse(o=>{ if(o.isLight){ lin(o.color); lin(o.groundColor); }
+    [].concat(o.material||[]).forEach(m=>{ if(m.userData.glb||m.userData.lin) return; m.userData.lin=true; lin(m.color); lin(m.emissive); }); });
+
+  // ── ป้ายชื่อ HTML ──
+  const lab=document.getElementById('labels');
+  W3.lbls=LBL.map(([x,y,h,t,cls,id,ic])=>{ const el=document.createElement(id?'button':'span'); el.className='lb '+cls; el.textContent=t;
+    if(ic) el.insertAdjacentHTML('afterbegin',ic.map(n=>`<img src="${A('logos/'+n+'.png')}" alt="">`).join(''));
+    if(id){ el.type='button'; el.dataset.id=id; el.setAttribute('aria-label',byId[id].name); el.addEventListener('click',()=>show(id,true)); }
+    lab.appendChild(el); return {el,v:new T.Vector3(x,h+2,y)}; });
+
+  Object.assign(W3,{ok:true,T,R:Rr,S,cam,stage,tgt:new T.Vector3(CXW,0,CZW),zoomed:null,hov:null});
+  const ro=new ResizeObserver(resize3); ro.observe(stage); resize3();
+  Rr.shadowMap.needsUpdate=true;
+  // ชี้/แตะโซน
+  const ray=new T.Raycaster(), nd=new T.Vector2();
+  const hit=e=>{ const r=Rr.domElement.getBoundingClientRect(); nd.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1); ray.setFromCamera(nd,cam);
+    const h=ray.intersectObjects(W3.pick.filter(m=>m.parent.visible))[0]; return h&&h.object.userData.zone; };
+  Rr.domElement.addEventListener('pointermove',e=>{ const id=hit(e); if(id!==W3.hov){ W3.hov=id; Rr.domElement.style.cursor=id?'pointer':'default'; tint(); } });
+  Rr.domElement.addEventListener('pointerleave',()=>{ W3.hov=null; tint(); });
+  Rr.domElement.addEventListener('click',e=>{ const id=hit(e); if(id) show(id,true); });
+  document.getElementById('back').addEventListener('click',closeHolo);
+  document.getElementById('holoX').addEventListener('click',closeHolo);
+  document.getElementById('loading').remove();
+}
+function tint(){ for(const id in W3.zoneMats){ const m=W3.zoneMats[id]; m.opacity=id===sel?.5:id===W3.hov?.4:.26; m.emissiveIntensity=id===sel?.5:.25; } req(); }
+
+// มุมกล้อง: home = ทั้งตลาดจากตรงกลาง · zone = ซูมเอียงลงไปที่โซน (โซนชิดซ้าย เว้นที่ให้การ์ดโฮโลแกรม)
+function homeView(){ const T=W3.T, c=W3.cam, t=Math.tan(c.fov*Math.PI/360);
+  const d=Math.max(700/t,800/(t*c.aspect))*1.03; return {p:new T.Vector3(CXW,d,CZW),t:new T.Vector3(CXW,0,CZW)}; }
+function zoneView(id){ const T=W3.T, c=W3.cam, b=ZG[id], xs=b.map(p=>p[0]), zs=b.map(p=>p[1]);
+  const cx=(Math.min(...xs)+Math.max(...xs))/2, cz=(Math.min(...zs)+Math.max(...zs))/2, r=Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))/2+40;
+  const t=Math.tan(c.fov*Math.PI/360), wide=W3.stage.clientWidth>860, d=Math.max(r/t,r/(t*c.aspect*(wide?.52:1)))*1.05, tilt=.6;
+  const tg=new T.Vector3(cx,0,cz);
+  if(wide) tg.x+=d*t*c.aspect*.46; else tg.z+=d*t*.45;
+  return {p:new T.Vector3(tg.x,d*Math.cos(tilt),tg.z+d*Math.sin(tilt)),t:tg}; }
+function fly(v){ W3.tw={p0:W3.cam.position.clone(),t0:W3.tgt.clone(),v,s:performance.now(),d:reduce?1:1100}; req(); }
+function resize3(){ const W=W3.stage.clientWidth,H=W3.stage.clientHeight; if(!W||!H) return;
+  W3.R.setSize(W,H,false); W3.cam.aspect=W/H; W3.cam.updateProjectionMatrix();
+  const v=W3.zoomed?zoneView(W3.zoomed):homeView(); W3.cam.position.copy(v.p); W3.tgt.copy(v.t); W3.cam.lookAt(W3.tgt); req(); }
+function req(){ if(W3.ok&&!W3.raf) W3.raf=requestAnimationFrame(frame3); }
+function frame3(now){
+  W3.raf=0; const c=W3.cam;
+  if(W3.tw){ const k=Math.min(1,(now-W3.tw.s)/W3.tw.d), e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+    c.position.lerpVectors(W3.tw.p0,W3.tw.v.p,e); W3.tgt.lerpVectors(W3.tw.t0,W3.tw.v.t,e); c.lookAt(W3.tgt); if(k>=1) W3.tw=null; else req(); }
+  W3.R.render(W3.S,c);
+  const W=W3.stage.clientWidth,H=W3.stage.clientHeight, v=new W3.T.Vector3();
+  for(const L of W3.lbls){ v.copy(L.v).project(c); L.el.style.transform=`translate(${((v.x+1)/2*W).toFixed(1)}px,${((1-v.y)/2*H).toFixed(1)}px) translate(-50%,-50%)`; L.el.style.visibility=v.z<1?'':'hidden'; }
+}
+function focusZone(id){ W3.zoomed=id; W3.stage.classList.add('zoomed'); document.getElementById('back').hidden=false; tint(); fly(zoneView(id)); openHolo(byId[id]); }
+function closeHolo(){
+  document.getElementById('holo').classList.remove('on'); document.getElementById('holo').setAttribute('aria-hidden','true'); stopHolo();
+  if(W3.ok&&W3.zoomed){ W3.zoomed=null; W3.stage.classList.remove('zoomed'); document.getElementById('back').hidden=true; fly(homeView()); }
+}
+
+// ══ โฮโลแกรม: ร้านตัวอย่าง 1 ล็อก หมุนช้าๆ ══
+const HG={}, HOLO_CAR_RY=Math.PI; // ท้ายรถหันเข้าพื้นที่ขาย (+z)
+function openHolo(z){
+  const card=document.getElementById('holo'), ev=z.kind==='event';
+  document.getElementById('holoT').textContent=z.name;
+  document.getElementById('holoSub').textContent=ev?'ตัวอย่างการจัดงาน':'ตัวอย่างร้าน 1 ล็อก';
+  const tag=document.getElementById('holoTag'); tag.className='holo-tag '+z.kind;
+  tag.innerHTML=z.kind==='food'?'<i></i>ล็อก = โต๊ะ 75 × 75 ซม.':z.kind==='boot'?'<i></i>ที่ขาย 2.4 × 3.5 ม. · เส้นจาง = รวมที่จอด 2.4 × 8 ม.':z.kind==='park'?'<i></i>ช่องจอด 2.5 × 5 ม. · นับช่องจากผัง':'<i></i>ลานกว้าง ใช้ทั้งลานหรือบางส่วน';
+  if(z.kind==='park') document.getElementById('holoSub').textContent='ตัวอย่างช่องจอด';
+  const ic=e=>e.map(([x,t])=>`<b title="${t}">${x}</b>`).join(''), hi=document.getElementById('holoIc');
+  hi.innerHTML=z.ok?`<div>✅ ขายได้ ${ic(z.ok)}</div>${z.no?`<div>🚫 ห้าม ${z.no.map(([x,t])=>`<b class="no" title="ห้าม${t}">${x}</b>`).join('')}</div>`:''}`:'';
+  hi.hidden=!z.ok;
+  document.getElementById('holoS').innerHTML=z.kind==='park'
+    ?`<div><small>ช่องจอด</small><b>2.5 × 5 ม.</b></div><div><small>พื้นที่</small><b>${zoneM2(z.id).toLocaleString('th-TH')} ตร.ม.</b></div><div><small>จอดได้ ≈ (คัน)</small><b class="big">${slots(z.id).length.toLocaleString('th-TH')}</b></div><div><small>ค่าจอด</small><b>ฟรี</b></div>`
+    :ev
+    ?`<div><small>ขนาด</small><b>ตามงาน</b></div><div><small>ราคา</small><b class="big">สอบถาม</b></div><div><small>มีวัน Setup</small><b>ได้</b></div><div><small>โทร</small><b>044-222-588</b></div>`
+    :`<div><small>ขนาดล็อก</small><b>${z.lot}</b></div><div><small>พื้นที่</small><b>${z.m2}</b></div><div><small>วันนี้ (${dayTxt})</small><b class="big">${range(z)} ฿</b></div><div><small>ทั้งปี / ล็อก / วัน</small><b>${yearRange(z)} ฿</b></div>`;
+  card.classList.add('on'); card.setAttribute('aria-hidden','false');
+  if(!window.THREE) return;
+  stopHolo(); buildHolo(z);
+}
+function stopHolo(){ cancelAnimationFrame(HG.raf); HG.raf=0;
+  if(HG.S){ HG.S.traverse(o=>{ if(o.geometry&&!o.userData.keep) o.geometry.dispose(); }); HG.S=null; } HG.mix=[]; }
+// ร้านตัวอย่าง = โมเดลสีจริง มีแสงเงา บนพื้นวงกลมเรืองแสงแบบเดิม
+function buildHolo(z){
+  const T=THREE, box=document.getElementById('holoGl'), MM=W3.M||{};
+  if(!HG.R){ HG.R=new T.WebGLRenderer({antialias:true,alpha:true}); HG.R.setClearColor(0,0);
+    HG.R.outputEncoding=T.sRGBEncoding; HG.R.toneMapping=T.ACESFilmicToneMapping; HG.R.toneMappingExposure=1.1;
+    HG.R.shadowMap.enabled=true; HG.R.shadowMap.type=T.PCFSoftShadowMap; box.prepend(HG.R.domElement); }
+  const S=HG.S=new T.Scene(), g=new T.Group(); S.add(g); HG.mix=[];
+  const C=0x5ff3ff, ACC=z.kind==='food'?'#ff8a3d':z.kind==='boot'?'#a874ff':z.kind==='park'?'#6aa8ff':'#2fd6bd';
+  // แสง: หลักอุ่นจากหน้า · ขอบฟ้าอมฟ้าจากหลัง ให้ยังมีกลิ่นโฮโลแกรม
+  S.add(new T.HemisphereLight(new T.Color('#dff6ff').convertSRGBToLinear(),new T.Color('#0b2433').convertSRGBToLinear(),.75));
+  const key=new T.DirectionalLight(new T.Color('#fff1dc').convertSRGBToLinear(),1.7); key.position.set(4,8,6); key.castShadow=true;
+  key.shadow.mapSize.set(1024,1024); const kc=key.shadow.camera; kc.left=kc.bottom=-8; kc.right=kc.top=8; kc.near=1; kc.far=30; key.shadow.bias=-.0005; S.add(key);
+  const rim=new T.DirectionalLight(new T.Color('#5ff3ff').convertSRGBToLinear(),1.1); rim.position.set(-5,4,-7); S.add(rim);
+
+  const MC={}, mat=(c,o={})=>{ const k=c+JSON.stringify(o); if(MC[k]) return MC[k];
+    const m=new T.MeshStandardMaterial(Object.assign({roughness:.7,metalness:0},o)); m.color.set(c).convertSRGBToLinear();
+    if(o.emissive) m.emissive.set(o.emissive).convertSRGBToLinear(); return MC[k]=m; };
+  const add=(geo,p,r,m)=>{ const me=new T.Mesh(geo,typeof m==='string'?mat(m):m); me.position.set(...p); if(r) me.rotation.set(...r); me.castShadow=me.receiveShadow=true; g.add(me); return me; };
+  const B=(w,h,d)=>new T.BoxGeometry(w,h,d), Cy=(r,h,s=14)=>new T.CylinderGeometry(r,r,h,s), flat=[-Math.PI/2,0,0];
+  const steel=mat('#c3c9d1',{metalness:.6,roughness:.35}), wood=mat('#b98a5b'), dark=mat('#2b3038',{roughness:.5});
+  const stripe=(a,b)=>new T.MeshStandardMaterial({map:stripeTex(8,a,b),roughness:.6,side:T.DoubleSide});
+  // โมเดล GLB: ของนิ่ง = clone · คน = clone โครงกระดูก + ขยับท่ายืน (idle)
+  const glb=(k,p,ry,s)=>{ const src=MM[k]; if(!src) return null; const sk=isCh(k), o=src.scene.clone();
+    o.position.set(...p); o.rotation.y=ry; o.scale.set(...(Array.isArray(s)?s:[s,s,s]));
+    o.traverse(m=>{ if(m.isMesh){ m.castShadow=m.receiveShadow=true; m.frustumCulled=false; m.userData.keep=true; } });
+    if(sk){ const cl=src.animations.find(a=>a.name==='idle'); if(cl){ const mx=new T.AnimationMixer(o); mx.clipAction(cl).play(); mx.update(Math.random()*2); HG.mix.push(mx); } }
+    g.add(o); return o; };
+  const CH=Object.keys(MM).filter(isCh); let ci=0;
+  const person=(x,zz,ry=0,shirt)=>{ if(CH.length){ const k_=CH[(ci++*5)%CH.length], h=new T.Box3().setFromObject(MM[k_].scene); if(glb(k_,[x,0,zz],ry,1.7/(h.max.y-h.min.y))) return; }
+    add(Cy(.07,.75,8),[x-.09,.37,zz],0,'#3a3f4a'); add(Cy(.07,.75,8),[x+.09,.37,zz],0,'#3a3f4a');
+    add(new T.CylinderGeometry(.17,.21,.7,12),[x,1.08,zz],0,shirt||'#ef5b5b'); add(new T.SphereGeometry(.13,14,10),[x,1.58,zz],0,'#e0b38c'); };
+  // พื้นที่ล็อก: แผ่นสีโซน + ขอบ
+  const lot=(w,d,x,zz,strong)=>{ if(strong) add(new T.PlaneGeometry(w,d),[x,.01,zz],flat,mat(ACC,{transparent:true,opacity:.45,emissive:ACC,emissiveIntensity:.35}));
+    const l=new T.LineLoop(new T.BufferGeometry().setFromPoints([[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(([u,v])=>new T.Vector3(x+u,.02,zz+v))),
+      new T.LineBasicMaterial({color:new T.Color(ACC).convertSRGBToLinear(),transparent:true,opacity:strong?1:.55})); g.add(l); };
+  const table=(x,zz,top='#f4f1ea')=>{ add(B(.75,.04,.75),[x,.74,zz],0,top); [[-.33,-.33],[.33,-.33],[-.33,.33],[.33,.33]].forEach(([u,v])=>add(B(.03,.72,.03),[x+u,.36,zz+v],0,steel)); };
+  const goods=(x,y,zz,n,cols)=>{ for(let i=0;i<n;i++) add(B(.16,.1+(i%3)*.05,.16),[x-.3+i*.2,y+.06,zz],0,cols[i%cols.length]); };
+  const PALx=['#ef5b5b','#f59e3b','#f6cf45','#4fbf86','#47a2e0','#a874e2','#f27cb4'];
+  let Rd=3.3, dist=11, look=1.2;
+  if(z.model==='tent'){
+    lot(.75,.75,0,.95,true); table(0,.95);
+    // เต็นท์ผ้าใบลายส้ม-ขาว
+    if(!(THAI&&glb('tentW',[0,0,0],0,.84))){
+    [[-1.25,-1.25],[1.25,-1.25],[-1.25,1.25],[1.25,1.25]].forEach(([u,v])=>add(Cy(.035,2.3,8),[u,1.15,v],0,steel));
+    add(new T.ConeGeometry(1.86,.75,4,1,true),[0,2.68,0],[0,Math.PI/4,0],stripe('#ffffff','#e2671c'));
+    add(B(2.5,.3,.03),[0,2.15,1.27],0,'#e2671c'); }
+    // เตาย่าง + หม้อ + กล่องน้ำแข็ง
+    add(B(.95,.12,.45),[-.15,.86,-.45],0,dark); add(B(.04,.8,.4),[-.6,.4,-.45],0,steel); add(B(.04,.8,.4),[.3,.4,-.45],0,steel);
+    for(let i=0;i<6;i++) add(Cy(.018,.42,6),[-.5+i*.14,.95,-.45],[Math.PI/2,0,0],i%2?'#c7653a':'#d9a35a');
+    add(new T.SphereGeometry(.05,8,6),[-.35,1.0,-.45],0,mat('#ff7a2e',{emissive:'#ff5a00',emissiveIntensity:.8}));
+    add(B(.55,.38,.36),[.95,.19,-.75],0,'#2d6fd1'); add(B(.57,.06,.38),[.95,.41,-.75],0,'#ffffff'); add(Cy(.16,.3,16),[.95,.6,-.75],0,steel);
+    goods(.05,.76,.95,4,['#f6cf45','#ef5b5b','#4fbf86','#f59e3b']);
+    glb('stool',[.45,0,1.55],0,2.4)||add(Cy(.17,.05,14),[.45,.5,1.55],0,'#e2671c');
+    person(-.2,-1.0,0); person(.3,1.75,Math.PI);
+  } else if(z.model==='kiosk'){
+    add(B(2.8,2.3,.08),[0,1.15,-1.15],0,'#f3ead9');
+    for(let i=0;i<3;i++){ add(B(2.3,.04,.3),[0,.95+i*.45,-.98],0,wood); for(let j=0;j<5;j++) add(Cy(.07,.2,10),[-.9+j*.45,1.07+i*.45,-.98],0,PALx[(i*2+j)%7]); }
+    add(B(1.9,.95,.6),[0,.475,-.25],0,'#e2671c'); add(B(1.95,.05,.65),[0,.97,-.25],0,'#f4f1ea'); add(B(.8,.42,.5),[.45,1.2,-.25],0,mat('#bfe6f2',{transparent:true,opacity:.45,roughness:.1}));
+    add(B(1.9,.36,.04),[0,2.5,-1.1],0,mat('#e2671c',{emissive:'#e2671c',emissiveIntensity:.35}));
+    [-.6,.6].forEach(x=>add(new T.ConeGeometry(.2,.16,16,1,true),[x,2.15,-.1],0,mat('#fff3c4',{emissive:'#ffd36a',emissiveIntensity:.9,side:T.DoubleSide})));
+    lot(.75,.75,0,.9,true); table(0,.9);
+    [[-.55,1.5],[.55,1.5]].forEach(([x,zz])=>{ if(!glb('stool',[x,0,zz],0,2.4)){ add(Cy(.17,.05,14),[x,.6,zz],0,'#e2671c'); add(Cy(.03,.58,6),[x,.29,zz],0,steel); } });
+    person(0,-.7,0); person(.9,1.6,Math.PI);
+  } else if(z.model==='car'){
+    Rd=5.2; dist=16; look=.9;
+    lot(2.4,8,0,0,false); lot(2.4,3.5,0,2.25,true);
+    const src=MM.suv, q=W3.PT&&W3.PT.suv;
+    if(src&&q){ const k=4.3/(q.bb.max.z-q.bb.min.z), kx=1.8/(q.bb.max.x-q.bb.min.x); glb('suv',[0,-q.bb.min.y*k*.85,-1.85],HOLO_CAR_RY,[kx,k*.85,k]);
+      add(B(1.4,.04,1.0),[0,1.95,-.05],[-.55,0,0],mat('#9fb4c6',{roughness:.15,metalness:.3})); }
+    else { add(B(1.78,.62,4.25),[0,.64,-1.85],0,'#2d5fa8'); add(B(1.6,.58,2.3),[0,1.24,-2.0],0,mat('#1f2a36',{roughness:.15})); }
+    // ราวแขวนเสื้อ · ผ้าใบวางของ · ร่ม
+    [-1,1].forEach(x=>add(Cy(.025,1.6,8),[x,.8,3.25],0,steel)); add(Cy(.02,2.1,8),[0,1.6,3.25],[0,0,Math.PI/2],steel);
+    for(let i=0;i<6;i++) add(B(.28,.55,.04),[-.75+i*.3,1.27,3.25],0,PALx[i]);
+    add(B(1.6,.03,1.2),[0,.015,1.4],0,'#3f7fd0');
+    add(B(1.3,.04,.6),[0,.72,1.35],0,'#f4f1ea'); [[-.6,1.1],[.6,1.1],[-.6,1.6],[.6,1.6]].forEach(([x,zz])=>add(B(.03,.7,.03),[x,.35,zz],0,steel));
+    [[-.4,.2,'#ef5b5b'],[0,.14,'#f6cf45'],[.4,.24,'#4fbf86']].forEach(([x,h,c])=>add(B(.3,h,.25),[x,.74+h/2,1.35],0,c));
+    for(let i=0;i<4;i++) add(B(.35,.12,.3),[-.6+i*.4,.09,2.2],0,PALx[(i+3)%7]);
+    add(new T.ConeGeometry(1.1,.35,12,1,true),[.95,2.15,3.65],0,stripe('#ffffff','#7b3fd6')); add(Cy(.02,2.1,8),[.95,1.05,3.65],0,steel);
+    person(-.75,2.4,Math.PI/2); person(.4,4.4,Math.PI); person(.9,2.9,-Math.PI/2);
+  } else if(z.model==='park'){
+    Rd=4.6; dist=15; look=.6;
+    [-2.5,0,2.5].forEach(x=>add(B(.08,.02,5),[x,.01,0],0,'#ffffff')); add(B(5,.02,.08),[0,.01,-2.5],0,'#ffffff');
+    lot(2.5,5,-1.25,0,true); lot(2.5,5,1.25,0,false);
+    const q=W3.PT&&W3.PT.sedan, src=MM.sedan;
+    if(src&&q){ const k=4.4/(q.bb.max.z-q.bb.min.z); glb('sedan',[1.25,-q.bb.min.y*k,0],0,k); }
+    add(Cy(.04,2.6,8),[-2.9,1.3,-2.2],0,steel); add(B(.7,.7,.06),[-2.9,2.5,-2.2],0,new T.MeshStandardMaterial({map:pTex(),roughness:.6}));
+    add(B(1.6,.12,.25),[-1.25,.06,-2.1],0,'#f6cf45');
+    person(-1.2,2.9,Math.PI);
+  } else {
+    Rd=6.2; dist=23; look=1.4;
+    lot(11,8,0,0,true);
+    // เวที + ทรัส + จอ LED + ลำโพง
+    const thaiStage=THAI&&glb('stageT',[0,0,-3.2],0,.8);
+    if(!thaiStage){ add(B(5,.7,3),[0,.35,-2.2],0,'#2b3038'); add(B(5.02,.06,3.02),[0,.71,-2.2],0,'#3a3f46');
+    [[-2.6,-3.7],[2.6,-3.7],[-2.6,-.7],[2.6,-.7]].forEach(([x,zz])=>add(B(.2,4,.2),[x,2,zz],0,steel));
+    add(B(5.4,.25,.25),[0,4,-3.7],0,steel); add(B(5.4,.25,.25),[0,4,-.7],0,steel); add(B(.25,.25,3.2),[-2.6,4,-2.2],0,steel); add(B(.25,.25,3.2),[2.6,4,-2.2],0,steel);
+    add(B(4.6,1.6,.06),[0,2.6,-3.6],0,mat('#5f3cc4',{emissive:'#7b5cff',emissiveIntensity:.8}));
+    [-3.2,3.2].forEach(x=>{ add(B(.8,1.4,.7),[x,.7,-1.6],0,dark); add(B(.7,.9,.6),[x,1.85,-1.6],0,dark); });
+    for(let i=0;i<4;i++) add(new T.ConeGeometry(.2,.3,12,1,true),[-1.8+i*1.2,3.75,-1.4],[Math.PI,0,0],mat('#fff3c4',{emissive:'#ffd36a',emissiveIntensity:1,side:T.DoubleSide})); }
+    // ซุ้มร้านรอบลาน
+    [[-3.5,2.3,'stallR'],[0,2.9,'stallG'],[3.5,2.3,'stallR']].forEach(([x,zz,k],i)=>{
+      if(THAI&&MM.tentW){ if(i!==1) glb('tentW',[x*.95,0,zz+.5],0,.75); return; }
+      if(glb(k,[x,0,zz],Math.PI,[2.2,2,2.2])) return;
+      [[-.6,-.6],[.6,-.6],[-.6,.6],[.6,.6]].forEach(([u,v])=>add(Cy(.03,2,8),[x+u,1,zz+v],0,steel));
+      add(new T.ConeGeometry(1.05,.5,4,1,true),[x,2.25,zz],[0,Math.PI/4,0],stripe('#ffffff',PALx[i*2])); });
+    for(let i=0;i<12;i++) person(-3.2+((i*37)%7)*1.05,.3+((i*13)%5)*.42,Math.PI+((i*7)%5-2)*.2);
+  }
+  // พื้นวงกลมแบบเดิม: แผ่นมืด + เส้นกริด + วงขอบ + วงสแกน + แสงพื้น
+  const floor=new T.Mesh(new T.CircleGeometry(Rd,64),new T.MeshStandardMaterial({color:new T.Color('#0d3346').convertSRGBToLinear(),roughness:.85,transparent:true,opacity:.8}));
+  floor.rotation.x=-Math.PI/2; floor.position.y=-.005; floor.receiveShadow=true; S.add(floor);
+  const AB=T.AdditiveBlending;
+  const pg=new T.PolarGridHelper(Rd,16,5,64,C,C); pg.material.transparent=true; pg.material.opacity=.25; pg.material.blending=AB; pg.position.y=.003; S.add(pg);
+  const cv=document.createElement('canvas'); cv.width=cv.height=128; const x=cv.getContext('2d'), gr=x.createRadialGradient(64,64,0,64,64,64);
+  gr.addColorStop(0,'rgba(95,243,255,.4)'); gr.addColorStop(1,'rgba(95,243,255,0)'); x.fillStyle=gr; x.fillRect(0,0,128,128);
+  const glow=new T.Mesh(new T.PlaneGeometry(Rd*2.6,Rd*2.6),new T.MeshBasicMaterial({map:new T.CanvasTexture(cv),transparent:true,blending:AB,depthWrite:false}));
+  glow.rotation.x=-Math.PI/2; glow.position.y=-.02; S.add(glow);
+  const ring=new T.Mesh(new T.RingGeometry(Rd*.98,Rd*1.01,96),new T.MeshBasicMaterial({color:C,transparent:true,opacity:.95,blending:AB,depthWrite:false,side:T.DoubleSide}));
+  ring.rotation.x=-Math.PI/2; ring.position.y=.004; S.add(ring);
+  const scan=new T.Mesh(new T.RingGeometry(Rd*.96,Rd*1.0,96),new T.MeshBasicMaterial({color:C,transparent:true,opacity:.5,blending:AB,depthWrite:false,side:T.DoubleSide}));
+  scan.rotation.x=-Math.PI/2; S.add(scan);
+  const cam=new T.PerspectiveCamera(30,1,.1,200); cam.position.set(0,dist*.5,dist); cam.lookAt(0,look,0);
+  Object.assign(HG,{cam,g,scan,top:z.model==='stage'?4.5:z.model==='car'?2.4:z.model==='park'?2:2.9});
+  const size=()=>{ const W=box.clientWidth,H=box.clientHeight; if(!W||!H) return; HG.R.setPixelRatio(Math.min(2,window.devicePixelRatio||1)); HG.R.setSize(W,H,false); cam.aspect=W/H; cam.updateProjectionMatrix(); };
+  size(); HG.size=size;
+  let last=performance.now(); g.rotation.y=-.6;
+  const loop=t=>{ if(!HG.S) return; HG.raf=requestAnimationFrame(loop); const dt=Math.min(.05,(t-last)/1000); last=t;
+    if(!reduce){ g.rotation.y+=dt*.3; HG.mix.forEach(m=>m.update(dt)); const s=(t/2600)%1; scan.position.y=s*HG.top; scan.material.opacity=.5*(1-s); }
+    HG.R.render(S,cam); };
+  HG.raf=requestAnimationFrame(loop);
+}
+window.addEventListener('resize',()=>{ if(HG.size&&HG.S) HG.size(); });
+
+// ══ ผังแบนสำรอง (SVG) ใช้เมื่อเปิด 3 มิติไม่ได้ ══
+const CX=1040, CY=700, D=1300;
+const r1=v=>Math.round(v*10)/10, P=(x,y,h=0)=>{ const s=D/(D-h); return [r1(CX+(x-CX)*s),r1(CY+(y-CY)*s)]; };
+const ps=a=>a.map(p=>p.join(',')).join(' ');
+const poly=(pts,fill,x='')=>`<polygon points="${ps(pts)}" fill="${fill}" ${x}/>`;
+function shade(hex,k){ const n=parseInt(hex.slice(1),16);
+  return '#'+[n>>16,n>>8&255,n&255].map(c=>Math.max(0,Math.min(255,Math.round(k<1?c*k:c+(255-c)*(k-1))))).map(c=>c.toString(16).padStart(2,'0')).join(''); }
+function prism(base,h0,h1,top,o={}){
+  const A=area(base), out=[];
+  base.forEach((a,i)=>{ const b=base[(i+1)%base.length], dx=b[0]-a[0], dy=b[1]-a[1], n=A>0?[dy,-dx]:[-dy,dx];
+    if(n[0]*(CX-(a[0]+b[0])/2)+n[1]*(CY-(a[1]+b[1])/2)<=0) return;
+    out.push(poly([P(...a,h0),P(...b,h0),P(...b,h1),P(...a,h1)],shade(top,.78)));
+    if(o.sign){ const q0=h1-(h1-h0)*.3; out.push(poly([P(...a,q0),P(...b,q0),P(...b,h1-1.5),P(...a,h1-1.5)],o.sign)); } });
+  out.push(poly(base.map(p=>P(...p,h1)),top,`stroke="${shade(top,.86)}" stroke-width="1.2"`));
+  return out.join('');
+}
+function buildFlat(){
+  const g=[`<rect x="225" y="5" width="1605" height="1410" fill="#dfe8d6"/>`, poly(SITE.map(p=>P(...p)),'#e6e4df'), poly(ANNEX.map(p=>P(...p)),'#e6e4df'), poly(ROAD.map(p=>P(...p)),'#4f5359')];
+  for(const id in ZG) g.push(poly(ZG[id].map(p=>P(...p)),'',`class="zg ${byId[id].kind}" data-id="${id}"`));
+  BLD.slice().sort((a,b)=>a.h-b.h).forEach(B=>g.push(B.zone?`<g data-id="${B.zone}">${prism(B.b,0,B.h,B.roof||'#e8eaed',B)}</g>`:prism(B.b,0,B.h,B.roof||'#e8eaed',B)));
+  const L=LBL.map(([x,y,h,t,cls,id])=>{ const [px,py]=P(x,y,h), c=cls.replace('zone ','');
+    return `<g class="pill ${c}"${id?` data-id="${id}"`:''} transform="translate(${px} ${py})"><rect/><text text-anchor="middle" dominant-baseline="central">${t}</text></g>`; });
+  const svg=document.getElementById('map'); svg.hidden=false; svg.innerHTML=g.join('')+L.join('');
+  const fit=()=>svg.querySelectorAll('.pill').forEach(p=>{ const b=p.querySelector('text').getBBox(), r=p.querySelector('rect'), px=p.classList.contains('lmk')?10:16, py=p.classList.contains('lmk')?4:7;
+    r.setAttribute('x',b.x-px); r.setAttribute('y',b.y-py); r.setAttribute('width',b.width+px*2); r.setAttribute('height',b.height+py*2); r.setAttribute('rx',(b.height+py*2)/2); });
+  fit(); if(document.fonts) document.fonts.ready.then(fit);
+  svg.addEventListener('click',e=>{ const t=e.target.closest('[data-id]'); if(t) show(t.dataset.id,true); });
+}
+function fallback(err){ if(err) console.warn('ผัง 3 มิติเปิดไม่ได้ ใช้ผังแบน',err);
+  const l=document.getElementById('loading'); if(l) l.remove(); document.getElementById('stage').classList.add('flat'); buildFlat(); }
+
+// ══ เริ่ม ══
+document.getElementById('list').innerHTML=ZONES.map(z=>`<button type="button" class="card ${z.kind}" data-id="${z.id}" data-kind="${z.kind}">
+  <b>${z.name}</b><small>${z.kind==='park'?fmtM2(zoneM2(z.id)):z.lot?'ล็อก '+z.lot:z.size}</small><div class="p">${z.kind==='event'?'ราคาตามงาน · สอบถาม':z.kind==='park'?`จอดฟรี ≈ ${slots(z.id).length.toLocaleString('th-TH')} คัน`:`วันนี้ ${range(z)} ฿`}</div></button>`).join('');
+document.querySelectorAll('.card').forEach(c=>c.addEventListener('click',()=>show(c.dataset.id)));
+document.getElementById('panel').innerHTML=EMPTY;
+// แตะรูป = ดูใหญ่ · แตะอีกครั้ง / Esc = ปิด
+const LBX=document.getElementById('lbx');
+document.getElementById('panel').addEventListener('click',e=>{ const f=e.target.closest('.photos figure'); if(!f) return;
+  LBX.querySelector('img').src=f.querySelector('img').src; LBX.querySelector('p').textContent=f.dataset.c; LBX.classList.add('on'); });
+LBX.addEventListener('click',()=>LBX.classList.remove('on'));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') LBX.classList.remove('on'); });
+document.getElementById('holoMore').addEventListener('click',()=>document.getElementById('panel').scrollIntoView({behavior:'smooth',block:'start'}));
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>setFilter(c.dataset.f)));
+load3().then(loadModels).then(M=>{ try{ build3(M); }catch(e){ fallback(e); } }).catch(fallback);
+</script>
+</body>
+</html>
