@@ -1,7 +1,7 @@
 # ภาพอธิบายการจัดล็อก (แทนรูปข้อมูลบนเว็บตลาด · วาดใหม่เป็นแบบของเรา)
 # รัน: "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b --factory-startup -P blender\lot-guide.py -- [food|boot-v|boot-h|all|ar]
 # ar = ส่งออก models/ar/lot-boot-1..4.glb + lot-food-1..4.glb ขนาดจริง (ไม่เรนเดอร์)
-# ได้: photos/lot-food.jpg · photos/lot-boot-v.jpg · photos/lot-boot-h.jpg (ฝังในไฟล์เดียวผ่าน build-assets.py)
+# ได้: photos/lot-food.jpg · photos/lot-boot-v2.jpg · photos/lot-boot-h2.jpg (ฝังในไฟล์เดียวผ่าน build-assets.py)
 # หน่วย = เมตร · x = ขวา · y = ลึกเข้าไป (กล้องมองจากทิศใต้ เอียงลง) · ป้ายภาษาไทยวางใน HTML ตามพิกัด FRAME ข้างล่าง
 import bpy, math, os, sys
 from mathutils import Vector
@@ -141,6 +141,15 @@ def lots(gx, n, horiz, car_i, real=False):
         else: car = glb('models/car/truck.glb', dims=PICKUP, loc=(gx + LOT_W / 2, SELL + CAR - .15 - L / 2, 0), rz=math.pi)
     elif horiz: car = glb('models/car/' + ('suv.glb', 'sedan.glb')[car_i % 2], length=4.4, loc=(gx + 2.45, SELL + 2.2, 0), rz=math.pi / 2)
     else: car = glb('models/car/' + ('truck.glb', 'van.glb')[car_i % 2], length=4.3, loc=(gx + LOT_W / 2, SELL + CAR / 2, 0), rz=math.pi)
+    if n > 1:   # จองหลายล็อก: ข้างรถจัดร้านได้ (เจ้าของ 24 ต.ค.) → ม่วงทั้งส่วนลึก 4.5 ม. · เทาเฉพาะตรงรถ · ใต้เส้นล็อก (สูง .006)
+        box((w, CAR, .004), (gx + w / 2, SELL + CAR / 2, .002), SELLC(), 0)
+        bpy.context.view_layer.update()
+        pts = [o.matrix_world @ Vector(c) for o in car.children_recursive if o.type == 'MESH' for c in o.bound_box]
+        x0, x1 = max(gx, min(p.x for p in pts) - .2), min(gx + w, max(p.x for p in pts) + .2)
+        y0, y1 = max(SELL, min(p.y for p in pts) - .2), min(SELL + CAR, max(p.y for p in pts) + .2)
+        box((x1 - x0, y1 - y0, .005), ((x0 + x1) / 2, (y0 + y1) / 2, .0025), ASPH(), 0)
+        for i in range(2 if horiz else 1, n):   # ราว 1.4 ม. ในล็อกที่ไม่มีรถ · ขยับพ้นท้ายรถถ้ารถกินเข้ามา
+            rx = max(gx + i * LOT_W + .5, x1 + .05); rack(rx, SELL + 1.4); rack(rx, SELL + 3.0)
     # ของในที่ขาย: ราวเสื้อ + โต๊ะ + คนขาย
     rack(gx + .45, 1.5)
     if n > 1:
@@ -210,16 +219,7 @@ def export_ar(name):
     print('AR', name)
 def build_ar_boot(n):
     """n ล็อกติดกัน · 1–2 ล็อกจอดรถแนวตั้ง · 3–4 ล็อกจอดแนวขวาง (เหมือนภาพ boot-v / boot-h)"""
-    scene(); w = LOT_W * n; car = lots(0, n, n >= 3, 0, real=True)
-    if n > 1:   # จองหลายล็อก: ข้างรถจัดร้านได้ (เจ้าของ 24 ต.ค.) → ม่วงทั้งส่วนลึก 4.5 ม. · เทาเฉพาะตรงรถ · ใต้เส้นล็อก (สูง .006)
-        box((w, CAR, .004), (w / 2, SELL + CAR / 2, .002), SELLC(), 0)
-        bpy.context.view_layer.update()
-        pts = [o.matrix_world @ Vector(c) for o in car.children_recursive if o.type == 'MESH' for c in o.bound_box]
-        x0, x1 = max(0, min(p.x for p in pts) - .2), min(w, max(p.x for p in pts) + .2)
-        y0, y1 = max(SELL, min(p.y for p in pts) - .2), min(SELL + CAR, max(p.y for p in pts) + .2)
-        box((x1 - x0, y1 - y0, .005), ((x0 + x1) / 2, (y0 + y1) / 2, .0025), ASPH(), 0)
-        for i in range(1 if n < 3 else 2, n):   # ราว 1.4 ม. ในล็อกที่ไม่มีรถ · ขยับพ้นท้ายกระบะถ้ากระบะกินเข้ามา
-            rx = max(i * LOT_W + .5, x1 + .05); rack(rx, SELL + 1.4); rack(rx, SELL + 3.0)
+    scene(); w = LOT_W * n; lots(0, n, n >= 3, 0, real=True)   # ม่วงข้างรถ/ราวเสื้อ อยู่ใน lots() (ใช้ร่วมกับภาพ boot-v2/h2)
     label(f'{w:g} ม.', (w / 2, -.4), .3)
     label('ขาย 3.5 ม.', (-.45, SELL / 2), .3, -math.pi / 2)
     label('รถ 4.5 ม.' if n == 1 else 'รถ + ขาย 4.5 ม.', (-.45, SELL + CAR / 2), .3, -math.pi / 2)
@@ -238,5 +238,5 @@ def build_ar_food(n):
 if which == 'ar':
     for n in (1, 2, 3, 4): build_ar_boot(n); build_ar_food(n)
 if which in ('food', 'all'): build_food()
-if which in ('boot-v', 'all'): build_boot('boot-v', BOOT_V, BOOT_V_FRAME, False, .62)
-if which in ('boot-h', 'all'): build_boot('boot-h', BOOT_H, BOOT_H_FRAME, True, .36)
+if which in ('boot-v', 'all'): build_boot('boot-v2', BOOT_V, BOOT_V_FRAME, False, .62)   # v2/h2 = ข้างรถจัดร้านได้ (ชื่อใหม่ · assets.js ฝังรูปตามชื่อ)
+if which in ('boot-h', 'all'): build_boot('boot-h2', BOOT_H, BOOT_H_FRAME, True, .36)

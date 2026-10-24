@@ -378,7 +378,9 @@ const BLD=[
   {b:[[792,760],[832,762],[806,1190],[764,1188]],h:14,roof:'#c7ced6'},
   {b:[[985,1248],[1080,1250],[1062,1392],[972,1388]],h:22},
   {b:R(676,348,29,98),h:16,roof:'#b4bac2'},                 // ตึกเล็กข้างธนาคาร: ห้องน้ำ + ไปรษณีย์ไทย
-  {b:R(764,1252,19,70),h:12,roof:'#5b6169'}                 // ห้องน้ำ ลานจอดท้ายตลาด
+  {b:[[774,1252],[784,1254],[773,1322],[764,1321]],h:12,roof:'#5b6169'},   // ห้องน้ำ ลานจอดท้ายตลาด (เอียงตามแผนที่)
+  {b:[[754,1213],[777,1216],[759,1340],[736,1337]],h:12,roof:'#c7ced6'},   // ตึกเทาข้างห้องน้ำ (ยังไม่รู้ว่าคืออะไร · ตามแผนที่)
+  {b:[[778,1217],[792,1219],[788,1246],[774,1245]],h:10,roof:'#c7ced6'}    // ตึกเล็กเหนือห้องน้ำ (ตามแผนที่)
 ];
 // ป้ายชื่อ [x, y, สูง, ข้อความ, ชนิด, โซน]
 const LBL=[
@@ -393,11 +395,12 @@ const ROOF_LOGO=[['bbl',432,170,34,30],['kbank',482,170,34,30],['dms',570,163,44
   ['banana',806,156,38,30,-.047],['pizzahut',852,154,34,30,-.047],['kfc',896,152,34,30,-.047],['jetts',944,150,40,30,-.047],
   ['autobacs',1236,146,72,26],['makro',1597,236,160,50,-.034],['zeed',460,226,56,24],['711',460,264,30,24],['chiwlao',598,232,32,22],['wishco',762,504,118,18],['swensens',897,492,58,20],
   ['mrdiy',650,330,30,24],['shabuzeed',598,305,30,22],['mixue',598,379,22,22],['dq',658,433,12,24],['thaipost',691,430,18,16],
-  ['watsons',454,623,62,20],['lotus',454,635,62,20],['ktb',448,648,50,20]];
+  ['watsons',454,623,62,20],['lotus',454,635,62,20],['ktb',448,648,50,20],['fountain-horse',656,489,14,2.4]];   // ม้าบนผิวน้ำพุ
 // ร้าน/จุดที่ไม่มีโลโก้ในผัง = ป้ายวาดเอง [บรรทัด, x, y, กว้าง, สูงหลังคา, พื้น, ตัวอักษร]
 const ROOF_TXT=[[['📍 สำนักงาน','จองที่นี่'],550,636,54,20,'#f6cf45','#2b2f35'],[['SCB','ไทยพาณิชย์'],726,240,40,26,'#4e2a84','#ffffff'],
   [['J.M. Steel'],1112,300,74,46,'#1f4e8c','#ffffff'],[['ถ.มิตรภาพ'],640,92,90,-.2,null,'rgba(255,255,255,.85)'],
   // ห้องน้ำ 5 จุด ตามแผนที่ตลาด · ป้ายที่กว้างเกินตึก ยกสูงกว่าขอบหลังคา (+3.5) ไม่ให้ขอบบัง
+  [['⛲ น้ำพุม้า'],656,509,30,2.5,'#0e7490','#ffffff'],   // ต่ำกว่า ~1 จมใต้พื้นลาน
   ...[[1028,317,32,16],[640,276,34,24],[690,377,28,16],[509,635,30,23.5],[773,1287,28,15.5]].map(([x,y,w,h])=>[['🚻 ห้องน้ำ'],x,y,w,h,'#2f6fd6','#ffffff'])];
 
 // ══ ราคา ══
@@ -419,10 +422,10 @@ const photos=z=>{ const a=z.photos; if(!a||!a.length) return '';
 const shot=(f,alt,caps)=>`<figure class="lot"><img src="${A('photos/lot-'+f+'.jpg')}" alt="${alt}"><div class="caps">${
   caps.map(([x,a,b])=>`<span style="left:${x}%"><b>${a}</b>${b?`<small>${b}</small>`:''}</span>`).join('')}</div></figure>`;
 const dgFood=()=>shot('food','ล็อก 0.75 × 2 ม. · โต๊ะ 75 × 75 ซม. จอง 1 ถึง 3 ล็อก โต๊ะต่อกัน',[[14.2,'1 ล็อก','โต๊ะ 1 ตัว'],[41.8,'2 ล็อก','โต๊ะต่อกัน'],[76.7,'3 ล็อก','โต๊ะต่อกัน']]);
-const dgBoot=()=>shot('boot-v','จอง 1–2 ล็อก จอดรถแนวตั้ง',[[19.6,'1 ล็อก','จอดแนวตั้ง'],[69.6,'2 ล็อก','จอดแนวตั้ง']])
-  +shot('boot-h','จอง 3–4 ล็อก จอดรถแนวนอนได้',[[22.1,'3 ล็อก','จอดแนวนอนได้'],[72.1,'4 ล็อก','จอดแนวนอนได้']])
-  +`<div class="dg-lg"><span><i style="background:#c9b0f2;border-color:#fff"></i>ที่ขาย 3.5 ม. (หน้า)</span><span><i style="background:#9aa0a6;border-color:#fff"></i>จอดรถ 4.5 ม. (หลัง)</span><span><i style="background:#f2c230;border-color:#f2c230"></i>ท้ายล็อก</span></div>
-  <p class="note">ล็อกกว้าง 2.4 ม. · ท้ายรถหันเข้าที่ขาย</p>`;
+const dgBoot=()=>shot('boot-v2','จอง 1–2 ล็อก จอดรถแนวตั้ง',[[19.6,'1 ล็อก','จอดแนวตั้ง'],[69.6,'2 ล็อก','จอดแนวตั้ง']])
+  +shot('boot-h2','จอง 3–4 ล็อก จอดรถแนวนอนได้',[[22.1,'3 ล็อก','จอดแนวนอนได้'],[72.1,'4 ล็อก','จอดแนวนอนได้']])
+  +`<div class="dg-lg"><span><i style="background:#c9b0f2;border-color:#fff"></i>ที่ขาย</span><span><i style="background:#9aa0a6;border-color:#fff"></i>รถจอด</span><span><i style="background:#f2c230;border-color:#f2c230"></i>ท้ายล็อก</span></div>
+  <p class="note">1 ล็อก: ขายหน้า 3.5 ม. · รถหลัง 4.5 ม.<br>2 ล็อกขึ้นไป: ข้างรถจัดร้านได้<br>ล็อกกว้าง 2.4 ม. · ท้ายรถหันเข้าที่ขาย</p>`;
 // ปุ่ม AR → ar.html (ไฟล์เดียวเปิดจากเครื่อง ไม่มี ar.html ข้างๆ → ชี้เว็บจริง)
 const AR_URL=(location.protocol==='file:'?'https://genzeus-web.github.io/saveone-korat-zonemap/':'')+'ar.html?k=';
 const diagram=z=>z.kind==='food'||z.kind==='boot'?`<div class="sec"><p class="sec-h">📐 จัดล็อกยังไง</p>${z.kind==='food'?dgFood():dgBoot()}<a class="btn arbtn" href="${AR_URL+z.kind}">📱 ดูขนาดจริงบนพื้น (AR)</a></div>`:'';
@@ -442,7 +445,7 @@ const flow=a=>`<div class="sec"><p class="sec-h">วิธีจอง</p><ol cl
 const acc=a=>`<div class="acc">${a.filter(([,b])=>b&&b.length).map(([t,body])=>`<details><summary>${t}</summary>${Array.isArray(body)?`<ul>${body.map(x=>`<li>${rt(x)}</li>`).join('')}</ul>`:`<div class="db">${body}</div>`}</details>`).join('')}</div>`;
 const telBtn=(t,c='')=>`<a class="btn${c}" href="tel:${esc(String(t).replace(/[^\d+]/g,''))}">📞 ${esc(t)}</a>`;
 const calls=(tel=[],ig)=>{ const [t1,t2]=tel; if(!t1) return '';
-  return `<div class="actions">${telBtn(t1,' pri')}${ig?`<a class="btn" href="https://www.instagram.com/${encodeURIComponent(ig)}/" target="_blank" rel="noopener">IG โซน</a>`:t2?telBtn(t2):''}</div>`; };
+  return `<div class="actions">${telBtn(t1,' pri')}${ig?`<a class="btn" href="https://www.instagram.com/${encodeURIComponent(ig)}/" target="_blank" rel="noopener">📷 IG @${esc(ig)}</a>`:t2?telBtn(t2):''}</div>`; };
 const warn=z=>z.warn?`<p class="warn">${rt(z.warn)}</p>`:'';
 function panel(z){
   const P_=document.getElementById('panel'); P_.scrollTop=0;
@@ -614,6 +617,10 @@ function build3(M={}){
     const tx=new T.CanvasTexture(c); tx.encoding=T.sRGBEncoding; tx.anisotropy=8;
     const m=new T.MeshStandardMaterial({map:tx,transparent:true,roughness:.55}); m.userData.lin=true;
     const me=new T.Mesh(decalG,m); me.scale.set(w,1,w*H/512); me.position.set(x,h+.6+(bg?0:2),y); me.receiveShadow=true; S.add(me); });
+  // น้ำพุม้า (แผนที่ตลาด: วงกลมม้าข้าง WishCo) · อ่างกลม ⌀ ≈ 22 หน่วย ≈ 8 ม. · โลโก้ม้าวางบนผิวน้ำ (ROOF_LOGO)
+  { const basin=new T.Mesh(new T.CylinderGeometry(11,11.6,2,40),mat('#eceae4')); basin.position.set(656,1,489);
+    const water=new T.Mesh(new T.CylinderGeometry(9.8,9.8,.5,40),mat('#6cc3dc',{roughness:.15,metalness:.1})); water.position.set(656,1.9,489);
+    [basin,water].forEach(m=>{ m.castShadow=m.receiveShadow=true; S.add(m); }); }
   // หลังคาสูง
   const metal=new T.MeshStandardMaterial({color:'#b9c4cf',roughness:.45,metalness:.5,map:stripeTex(24,'#ffffff','#c9d1d9')});
   [[845,548],[888,548],[845,692],[888,692],[845,620],[888,620]].forEach(([x,y])=>I('post',new T.CylinderGeometry(1.4,1.4,1,8),mat('#7b8088',{metalness:.4}),{p:[x,2+19,y],s:[1,38,1]}));
