@@ -1,9 +1,9 @@
 # ภาพอธิบายการจัดล็อก (แทนรูปข้อมูลบนเว็บตลาด · วาดใหม่เป็นแบบของเรา)
 # รัน: "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b --factory-startup -P blender\lot-guide.py -- [food|boot-v|boot-h|all|ar]
-# ar = ส่งออก models/ar/lot-boot-1..4.glb + lot-food-1..4.glb ขนาดจริง (ไม่เรนเดอร์)
+# ar = ส่งออก _กรุ/ar/models/ar/lot-boot-1..4.glb + lot-food-1..4.glb ขนาดจริง (ไม่เรนเดอร์) · หน้า AR เลิกใช้ 24 ต.ค. เก็บในกรุ
 # ได้: photos/lot-food.jpg · photos/lot-boot-v2.jpg · photos/lot-boot-h2.jpg (ฝังในไฟล์เดียวผ่าน build-assets.py)
 # หน่วย = เมตร · x = ขวา · y = ลึกเข้าไป (กล้องมองจากทิศใต้ เอียงลง) · ป้ายภาษาไทยวางใน HTML ตามพิกัด FRAME ข้างล่าง
-import bpy, math, os, sys
+import bpy, bmesh, math, os, sys
 from mathutils import Vector
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
@@ -184,23 +184,51 @@ def rod(a, b, r, m):
     """ท่อตรงระหว่างจุด a, b บนระนาบ y-z (x เดียวกัน)"""
     dy, dz = b[1] - a[1], b[2] - a[2]
     cyl(r, math.hypot(dy, dz), (a[0], (a[1] + b[1]) / 2, (a[2] + b[2]) / 2), m, rot=(math.atan2(-dy, dz), 0, 0), v=8)
+def skin(pts, edges, m, sub=2, cut=None):
+    """โครงเส้น → เนื้อโค้งต่อกันเนียน (Skin + Subdivision) · pts = [(x, y, z, rx, ry)] · ส่งออก GLB แล้ว modifier ถูก apply
+    cut = z → ทำเป็น mesh แล้วตัดส่วนต่ำกว่า z ทิ้ง (ชายเสื้อเรียบ ไม่มนเป็นก้น)"""
+    me = bpy.data.meshes.new('sk'); me.from_pydata([p[:3] for p in pts], edges, []); o = bpy.data.objects.new('sk', me)
+    bpy.context.scene.collection.objects.link(o); o.modifiers.new('skin', 'SKIN').use_smooth_shade = True
+    for i, p in enumerate(pts): me.skin_vertices[0].data[i].radius = p[3:]
+    o.modifiers.new('sub', 'SUBSURF').levels = sub; o.data.materials.append(m)
+    if cut is not None:
+        bpy.context.view_layer.objects.active = o; o.select_set(True); bpy.ops.object.convert(target='MESH'); o.select_set(False)
+        bm = bmesh.new(); bm.from_mesh(o.data)
+        bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, cut), plane_no=(0, 0, -1), clear_outer=True)
+        bm.to_mesh(o.data); bm.free()
+    return o
 def person(xy, shirt, h=HUMAN):
-    """หุ่นคนสัดส่วนจริง (ราว 7.5 หัว) หันหน้าไป -y · สัดส่วนคิดจากความสูง 1.65 แล้วย่อ/ขยายตาม h"""
+    """หุ่นคนสัดส่วนจริง (ราว 7.5 หัว) หันหน้าไป -y · สัดส่วนคิดจากความสูง 1.65 แล้วย่อ/ขยายตาม h
+    เนื้อแต่ละส่วน (ขา/เสื้อ/แขน) = skin() ทับกันที่ข้อต่อ ไม่ต้องต่อ mesh จริง · เสื้อยืดแขนสั้น กางเกงขายาว รองเท้าผ้าใบ"""
     x, y = xy; k = h / 1.65
-    SKIN, PANT, SHOE, HAIR, SH = M('#c99b77', .7), M('#2c3440', .8), M('#1d1f22', .6), M('#1b1b1d', .9), M(shirt, .8)
+    SKIN, PANT, SHOE, SOLE, HAIR, SH = M('#c99b77', .7), M('#2c3440', .8), M('#33373d', .6), M('#f2f2ef', .7), M('#1b1b1d', .9), M(shirt, .8)
+    P = lambda px, py, pz, rx, ry=None: (x + px * k, y + py * k, pz * k, rx * k, (ry or rx) * k)
+    # Subdivision หดปลายเส้นเข้าไปราว 1 รัศมี → ปลายทุกเส้นยื่นเข้าไปในชิ้นถัดไป (ขาลงในรองเท้า คอลงในเสื้อ) ไม่เห็นรอยต่อ
+    for s in (-1, 1):   # ขาแยกเส้น ไม่แตกกิ่ง (Skin แตกกิ่งที่เป้าแล้วบานออกนอกเสื้อ) · โคนขาซ้อนกันในเสื้อ
+        skin([P(s * .06, 0, .98, .075, .085), P(s * .085, 0, .82, .08, .085), P(s * .088, 0, .47, .06), P(s * .085, .01, .05, .05)],
+             [(0, 1), (1, 2), (2, 3)], PANT)                                                            # กางเกง: เอว → สะโพก → เข่า → ข้อเท้า (ในรองเท้า)
+    skin([P(0, 0, .74, .17, .115), P(0, -.005, 1.06, .165, .11), P(0, 0, 1.3, .16, .1), P(0, .005, 1.4, .07, .06)]
+         + [p for s in (-1, 1) for p in (P(s * .17, 0, 1.36, .06), P(s * .215, 0, 1.17, .055))],
+         [(0, 1), (1, 2), (2, 3), (2, 4), (4, 5), (2, 6), (6, 7)], SH, cut=.86 * k)                                # เสื้อยืด: ชาย (คลุมขอบกางเกง) → อก → บ่า + แขนเสื้อสั้น
     for s in (-1, 1):
-        box((.1 * k, .26 * k, .07 * k), (x + s * .09 * k, y - .04 * k, .035 * k), SHOE, .02)          # รองเท้า
-        cyl(.055 * k, .41 * k, (x + s * .09 * k, y, .275 * k), PANT)                                # หน้าแข้ง
-        cyl(.075 * k, .42 * k, (x + s * .095 * k, y, .67 * k), PANT)                                # ต้นขา
-        cyl(.045 * k, .3 * k, (x + s * .225 * k, y, 1.22 * k), SH)                                  # ต้นแขน (แขนเสื้อ)
-        cyl(.038 * k, .27 * k, (x + s * .23 * k, y, .935 * k), SKIN)                                # แขนล่าง
-        bpy.ops.mesh.primitive_uv_sphere_add(radius=.045 * k, location=(x + s * .23 * k, y, .78 * k)); bpy.context.object.data.materials.append(SKIN)
-    box((.34 * k, .2 * k, .16 * k), (x, y, .92 * k), PANT, .05 * k)                                  # สะโพก
-    box((.38 * k, .22 * k, .44 * k), (x, y, 1.18 * k), SH, .07 * k)                                  # ลำตัว
-    cyl(.05 * k, .09 * k, (x, y, 1.43 * k), SKIN)                                                    # คอ
-    for r, z, dy, m in ((.105, 1.535, 0, SKIN), (.107, 1.54, .012, HAIR)):   # ยอดผม ≈ h                           # หัว + ผม (ซ้อนเลื่อนหลัง/บน)
-        bpy.ops.mesh.primitive_uv_sphere_add(radius=r * k, location=(x, y + dy * k, z * k)); o = bpy.context.object
-        o.scale = (.85, .95, 1.05); bpy.ops.object.shade_smooth(); o.data.materials.append(m)
+        skin([P(s * .085, .05, .055, .05, .048), P(s * .085, -.15, .05, .048, .042)], [(0, 1)], SHOE, 1)    # รองเท้าผ้าใบ: ส้น → ปลาย
+        box((.105 * k, .29 * k, .02 * k), (x + s * .085 * k, y - .05 * k, .01 * k), SOLE, .008)          # พื้นรองเท้าขาว
+        skin([P(s * .19, 0, 1.3, .042), P(s * .225, -.01, 1.08, .036), P(s * .235, -.02, .86, .028),
+              P(s * .238, -.025, .75, .024, .04)], [(0, 1), (1, 2), (2, 3)], SKIN)                      # ไหล่ (ในเสื้อ) → ศอก → ข้อมือ → มือ (แบน)
+    skin([P(0, .005, 1.3, .05), P(0, .01, 1.5, .045)], [(0, 1)], SKIN)                                 # คอ (โคนอยู่ในเสื้อ)
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=.1 * k, location=(x, y, 1.54 * k), segments=32, ring_count=16)
+    o = bpy.context.object; o.scale = (.86, .96, 1.08); bpy.ops.object.shade_smooth(); o.data.materials.append(SKIN)   # หัว: ยอด ≈ 1.648
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=.105 * k, location=(x, y + .008 * k, 1.546 * k), segments=48, ring_count=24)
+    o = bpy.context.object; o.scale = (.88, .97, 1.0)
+    bm = bmesh.new(); bm.from_mesh(o.data)                        # ผม: ตัดด้วยระนาบเอียง (ไรผมเรียบ ไม่หยัก) → เห็นหน้า + ตัดใต้ท้ายทอย
+    for co, no in (((0, -.02, .035), (0, -1, -1.3)), ((0, 0, -.06), (0, 0, -1))):
+        bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=co, plane_no=no, clear_outer=True)
+    bm.to_mesh(o.data); bm.free(); bpy.ops.object.shade_smooth(); o.data.materials.append(HAIR)
+    for s in (-1, 1):
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=.009 * k, location=(x + s * .033 * k, y - .09 * k, 1.555 * k), segments=12, ring_count=8)
+        bpy.context.object.scale = (1, .6, 1.2); bpy.context.object.data.materials.append(HAIR)        # ตา
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=.02 * k, location=(x + s * .086 * k, y + .005 * k, 1.535 * k), segments=12, ring_count=8)
+        bpy.context.object.scale = (.5, 1, 1.3); bpy.context.object.data.materials.append(SKIN)        # หู
 TOPS = [('#f2c230', '#d8322f'), ('#2d6fd1', '#2d6fd1'), ('#4fbf86', '#d8322f'), ('#f2c230', '#2d6fd1')]   # (หน้าโต๊ะ, ขา) ตามรูปตลาด
 def ftable(x, y, i, T=.75, H=.75):
     """โต๊ะพับ 75 × 75 สูง 75 ซม. · ขาเหล็กไขว้ (X) ซ้าย-ขวา · ของบนโต๊ะเหมือน table()"""
@@ -214,7 +242,7 @@ def ftable(x, y, i, T=.75, H=.75):
     for k in range(4): cyl(.045, .05, (x + .18 + k * .13, y + .26, H + .07), M(goods[1], .55))
     box((.22, .16, .14), (x + .2, y + .58, H + .07), M('#cfe8f2', .1), .01)
 def export_ar(name):
-    d = os.path.join(ROOT, 'models', 'ar'); os.makedirs(d, exist_ok=True)
+    d = os.path.join(ROOT, '_กรุ', 'ar', 'models', 'ar'); os.makedirs(d, exist_ok=True)
     bpy.ops.export_scene.gltf(filepath=os.path.join(d, 'lot-' + name + '.glb'), export_format='GLB', export_apply=True)
     print('AR', name)
 def build_ar_boot(n):

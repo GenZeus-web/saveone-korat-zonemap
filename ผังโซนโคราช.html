@@ -110,7 +110,6 @@ header p{margin:4px 0 0;color:var(--mute);font-size:14px}
 .where{margin:2px 0 0;color:var(--mute);font-size:14px}
 .sec{margin-top:18px}
 .sec-h{margin:0 0 8px;font-size:14px;font-weight:700}
-.arbtn{margin-top:10px}
 .today{padding:14px 16px;border-radius:14px;background:var(--bg)}
 .today small{display:block;color:var(--mute);font-size:13px}
 .today b{font-size:34px;line-height:1.15}
@@ -316,6 +315,9 @@ function pip(b,[x,y]){ let in_=false; for(let i=0,j=b.length-1;i<b.length;j=i++)
   if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi) in_=!in_; } return in_; }
 const SITE=[[405,140],[1715,75],[1625,920],[1430,825],[1185,780],[1060,1405],[700,1370],[740,735],[405,715]];
 const ANNEX=R(262,432,135,183), ROAD=[[305,94],[1812,20],[1812,72],[305,146]];
+// ทางรถเข้า (เจ้าของ 24 ต.ค.): ถนน ข้าง Jetts → ข้างลานกิจกรรม → ข้างสตรีทฟู้ด → ลานเปิดท้ายใหญ่ · กว้าง 26 หน่วย ≈ 9 ม. (กะเอา)
+// ตึก J.M. Steel ฝั่งขวาหดเข้าให้ทางผ่าน (ไม่ลดโซนสตรีทฟู้ด · เจ้าของเลือก) [x บน, y บน, x ล่าง, y ล่าง, กว้าง]
+const LANE=[1066,112,1013,750,26];
 const ZG={
   'food-sf1':R(402,294,64,143), 'food-sf2':[[894,518],[1000,518],[992,710],[894,710]], 'food-in':R(412,447,174,176),
   'boot-a':[[1142,440],[1238,440],[1187,734],[1098,734]], 'boot-b':[[852,748],[1168,762],[1096,1214],[812,1198]],
@@ -370,8 +372,8 @@ const BLD=[
   {b:[[592,515],[812,548],[812,735],[592,735]],h:26,roof:'#e3dbcf',ac:[[650,600],[740,640]]},
   {b:R(688,468,148,72),h:18,roof:'#2b2f35',wall:'#3a3f46',sign:'#28b48a'},
   {b:R(862,470,70,45),h:20,roof:'#fbe3ea',sign:'#d23c5b'},
-  {b:[[1085,108],[1195,102],[1100,718],[1000,718]],h:46,roof:'#d3d9e0',sign:'#1f4e8c',ac:[[1110,250],[1080,450],[1060,620]]},
-  {b:R(1012,262,33,110),h:16,roof:'#e3ebf3'},
+  {b:[[1085,108],[1195,102],[1100,718],[1030,718]],h:46,roof:'#d3d9e0',sign:'#1f4e8c',ac:[[1110,250],[1080,450],[1060,620]]},
+  {b:R(1010,262,20,110),h:16,roof:'#e3ebf3'},   // ห้องน้ำข้างลานกิจกรรม (แคบลง 24 ต.ค. ให้ทางรถเข้าผ่าน)
   {b:[[1185,100],[1295,95],[1282,192],[1183,188]],h:26,sign:'#ef7d1a'},
   {b:[[1400,90],[1510,86],[1470,502],[1362,488]],h:38,roof:'#cdd4dc'},
   {b:[[1510,86],[1715,79],[1680,407],[1480,380]],h:50,roof:'#eceef0',sign:'#d7262f',ac:[[1560,130],[1650,125],[1600,320],[1540,345]]},
@@ -401,7 +403,7 @@ const ROOF_TXT=[[['📍 สำนักงาน','จองที่นี่']
   [['J.M. Steel'],1112,300,74,46,'#1f4e8c','#ffffff'],[['ถ.มิตรภาพ'],640,92,90,-.2,null,'rgba(255,255,255,.85)'],
   // ห้องน้ำ 5 จุด ตามแผนที่ตลาด · ป้ายที่กว้างเกินตึก ยกสูงกว่าขอบหลังคา (+3.5) ไม่ให้ขอบบัง
   [['⛲ น้ำพุม้า'],656,509,30,2.5,'#0e7490','#ffffff'],   // ต่ำกว่า ~1 จมใต้พื้นลาน
-  ...[[1028,317,32,16],[640,276,34,24],[690,377,28,16],[509,635,30,23.5],[773,1287,28,15.5]].map(([x,y,w,h])=>[['🚻 ห้องน้ำ'],x,y,w,h,'#2f6fd6','#ffffff'])];
+  ...[[1020,317,22,16],[640,276,34,24],[690,377,28,16],[509,635,30,23.5],[773,1287,28,15.5]].map(([x,y,w,h])=>[['🚻 ห้องน้ำ'],x,y,w,h,'#2f6fd6','#ffffff'])];
 
 // ══ ราคา ══
 const now=new Date(), md=(now.getMonth()+1)*100+now.getDate();
@@ -426,9 +428,8 @@ const dgBoot=()=>shot('boot-v2','จอง 1–2 ล็อก จอดรถแ
   +shot('boot-h2','จอง 3–4 ล็อก จอดรถแนวนอนได้',[[22.1,'3 ล็อก','จอดแนวนอนได้'],[72.1,'4 ล็อก','จอดแนวนอนได้']])
   +`<div class="dg-lg"><span><i style="background:#c9b0f2;border-color:#fff"></i>ที่ขาย</span><span><i style="background:#9aa0a6;border-color:#fff"></i>รถจอด</span><span><i style="background:#f2c230;border-color:#f2c230"></i>ท้ายล็อก</span></div>
   <p class="note">1 ล็อก: ขายหน้า 3.5 ม. · รถหลัง 4.5 ม.<br>2 ล็อกขึ้นไป: ข้างรถจัดร้านได้<br>ล็อกกว้าง 2.4 ม. · ท้ายรถหันเข้าที่ขาย</p>`;
-// ปุ่ม AR → ar.html (ไฟล์เดียวเปิดจากเครื่อง ไม่มี ar.html ข้างๆ → ชี้เว็บจริง)
-const AR_URL=(location.protocol==='file:'?'https://genzeus-web.github.io/saveone-korat-zonemap/':'')+'ar.html?k=';
-const diagram=z=>z.kind==='food'||z.kind==='boot'?`<div class="sec"><p class="sec-h">📐 จัดล็อกยังไง</p>${z.kind==='food'?dgFood():dgBoot()}<a class="btn arbtn" href="${AR_URL+z.kind}">📱 ดูขนาดจริงบนพื้น (AR)</a></div>`:'';
+// ปุ่ม AR เอาออก 24 ต.ค. (ผอ. ไม่เอา) · หน้า AR เก็บที่ _กรุ/ar/
+const diagram=z=>z.kind==='food'||z.kind==='boot'?`<div class="sec"><p class="sec-h">📐 จัดล็อกยังไง</p>${z.kind==='food'?dgFood():dgBoot()}</div>`:'';
 
 // ══ แผงรายละเอียด · ตัวกรอง ══
 let sel=null, filt='all';
@@ -494,15 +495,21 @@ const CXW=1040, CZW=712, reduce=matchMedia('(prefers-reduced-motion: reduce)').m
 const js=src=>new Promise((ok,no)=>{ const s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=no; document.head.appendChild(s); });
 const EX='https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/';
 async function load3(){ if(!window.THREE) await js('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js');
-  try{ await js(EX+'loaders/GLTFLoader.js'); }catch(e){} }
+  try{ await js(EX+'loaders/GLTFLoader.js'); await js(EX+'utils/SkeletonUtils.js'); }catch(e){} }
 // โมเดลฟรี Kenney (CC0) ในโฟลเดอร์ models/ · โหลดไม่ได้ (เปิดไฟล์ตรง / ไม่มีไฟล์) = ใช้รูปทรงที่สร้างเอง
 const MODELS={sedan:'car/sedan',suv:'car/suv',van:'car/van',hatch:'car/hatchback-sports',taxi:'car/taxi',truck:'car/truck',cone:'car/cone',
   stallR:'town/stall-red',stallG:'town/stall-green',stool:'town/stall-stool',cart:'town/cart',lantern:'town/lantern',tree:'town/tree-high-round',tree2:'town/tree',
-  tentW:'blender/tent-white',cartF:'blender/food-cart',umbT:'blender/umbrella',stageT:'blender/stage',
+  tentW:'blender/tent-white',cartF:'blender/food-cart',umbT:'blender/umbrella',stageT:'blender/stage',signT:'blender/sign-tower',horseF:'blender/horse-fountain',shopW:'people/shopper-woman',coneM:'props/traffic-cone',barM:'props/road-barrier',
+  songT:'props/songthaew',tukT:'props/tuktuk',motoM:'props/motorbike',lampM:'props/street-lamp',benchM:'props/bench-park',
   ...Object.fromEntries('abcefijkmnq'.split('').map(c=>['p'+c,'people/character-'+c]))};
 // ชุดของตลาดไทยที่ปั้นใน Blender (blender/thai-set.py) = ค่าเริ่มต้น (เจ้าของเลือก 23 ต.ค.) · ?thai=0 = แบบเดิม
 const THAI=new URLSearchParams(location.search).get('thai')!=='0';
 const isCh=k=>/^p[a-z]$/.test(k);
+// คนมีกระดูก + ท่า (Meshy 24 ต.ค.) ใช้ในการ์ดโซนเท่านั้น · ผังใหญ่ยังเป็นคนนิ่ง (วาดรวดเดียว มือถือลื่น)
+const RIG=['shopA','manL','venW','kidG','teenG','eldM'];
+// ของในการ์ดโซน (คน + ของร้าน Meshy) อยู่ models/holo/ · ไม่ฝัง assets.js → โหลดตอนเปิดการ์ดครั้งแรก หน้าแรกเบา
+const HOLO_MODELS={shopA:'shopper-woman-chat',manL:'man-listen',venW:'vendor-woman-hip',kidG:'child-girl-wave',teenG:'teen-girl-phone',eldM:'elder-man-look',
+  grill:'grill-charcoal',gas:'gas-tank-stove',cooler:'ice-cooler',veg:'veg-crates',umbM:'umbrella-market',rack:'clothes-rack',aframe:'sign-aframe'};
 async function loadModels(){ const M={}; if(!THREE.GLTFLoader||(location.protocol==='file:'&&!window.ASSETS)) return M;
   const mgr=new THREE.LoadingManager(); mgr.setURLModifier(A); const L=new THREE.GLTFLoader(mgr);
   // อ่านเป็นไบต์เองแล้ว parse พร้อมโฟลเดอร์จริง → รูปพื้นผิว (Textures/colormap.png) ถูกแปลงผ่าน A() ได้
@@ -550,7 +557,7 @@ function build3(M={}){
       if(im.instanceColor) im.instanceColor.needsUpdate=true; im.castShadow=!/^(line|dash)/.test(k); im.receiveShadow=true; S.add(im); } };
   // โมเดล GLB → ชิ้นส่วน (อบตำแหน่งในไฟล์ลงรูปทรงแล้ว) ใช้วางแบบ instance ได้
   const PT={};
-  for(const k in M){ if(isCh(k)) continue; const gs=M[k].scene; gs.updateMatrixWorld(true); const parts=[];
+  for(const k in M){ if(isCh(k)||RIG.includes(k)) continue; const gs=M[k].scene; gs.updateMatrixWorld(true); const parts=[];
     gs.traverse(o=>{ if(o.isMesh){ const geo=o.geometry.clone(); geo.applyMatrix4(o.matrixWorld); parts.push({geo,m:o.material}); } });
     PT[k]={parts,bb:new T.Box3().setFromObject(gs)}; }
   // คน: อบท่า (ยืน / เดิน) ลงชิ้นส่วน แล้ววางแบบ instance เหมือนของอื่น
@@ -580,9 +587,11 @@ function build3(M={}){
   for(let t=0;t<1;t+=.024){ const x=320+(1800-320)*t, z=120+(47-120)*t; I('dash',new T.BoxGeometry(22,.4,2.6),mat('#f2d35b'),{p:[x,1.7,z],r:[0,-roadA,0]}); }
   // ถนนซอยข้างตลาด (แถบเทาเข้มในแผนที่ทางการ · วัดจากรูป) [x บน, y บน, x ล่าง, y ล่าง, กว้าง]
   // เส้นกลางยาวเลยขอบแผนที่ = ถนนออกไปหลังตลาด จึงต่อให้ยาวออกนอกภาพ ไม่ให้ดูเหมือนขาดกลางสนาม
-  [[397,88,397,775,18],[1311,60,876,2400,14],[1728,60,1634,919,19]].forEach(([x0,y0,x1,y1,w])=>{
+  [[397,88,397,775,18],[1311,60,876,2400,14],[1728,60,1634,919,19],LANE].forEach(([x0,y0,x1,y1,w])=>{
     const L=Math.hypot(x1-x0,y1-y0), nx=(y1-y0)/L*w/2, ny=-(x1-x0)/L*w/2;
     ext(shp([[x0-nx,y0-ny],[x0+nx,y0+ny],[x1+nx,y1+ny],[x1-nx,y1-ny]]),3,2.3,mat('#4a4e55',{roughness:.95}),false); });
+  { const [x0,y0,x1,y1]=LANE, a=Math.atan2(x1-x0,y1-y0);   // ทางรถเข้า: เส้นประขาวกลางทาง
+    for(let t=.04;t<1;t+=.06) I('dashL',new T.BoxGeometry(.8,.4,12),mat('#ffffff'),{p:[x0+(x1-x0)*t,2.5,y0+(y1-y0)*t],r:[0,a,0]}); }
   // ช่องจอด: เส้นขาวตามช่องจริง 2.5 × 5 ม. (ลานจอด + ลานกิจกรรมซึ่งปกติเป็นลานจอด)
   const LINE_M=mat('#ffffff',{roughness:.7}), lineG=new T.BoxGeometry(.15*U,.3,5*U), sepG=new T.BoxGeometry(2.5*U,.3,.15*U);
   const PARKS=ZONES.filter(z=>z.kind==='park'||z.kind==='event').map(z=>z.id);
@@ -605,7 +614,8 @@ function build3(M={}){
   }
   // โลโก้ร้านบนหลังคา · โหลดเสร็จค่อยตั้งสัดส่วนตามรูป
   const TL=new T.TextureLoader(), decalG=new T.PlaneGeometry(1,1).rotateX(-Math.PI/2);
-  ROOF_LOGO.forEach(([n,x,y,w,h,ang=0])=>TL.load(A('logos/'+n+'.png'),tx=>{ tx.encoding=T.sRGBEncoding; tx.anisotropy=8;
+  // มีม้า 3 มิติแล้ว ไม่ต้องวางโลโก้ม้าบนน้ำ
+  ROOF_LOGO.filter(([n])=>n!=='fountain-horse'||!PT.horseF).forEach(([n,x,y,w,h,ang=0])=>TL.load(A('logos/'+n+'.png'),tx=>{ tx.encoding=T.sRGBEncoding; tx.anisotropy=8;
     const m=new T.MeshStandardMaterial({map:tx,transparent:true,roughness:.55}); m.userData.lin=true;
     const me=new T.Mesh(decalG,m); me.scale.set(w,1,w*tx.image.height/tx.image.width); me.position.set(x,h+.6,y); me.rotation.y=-ang; me.receiveShadow=true;
     S.add(me); req(); }));
@@ -620,7 +630,14 @@ function build3(M={}){
   // น้ำพุม้า (แผนที่ตลาด: วงกลมม้าข้าง WishCo) · อ่างกลม ⌀ ≈ 22 หน่วย ≈ 8 ม. · โลโก้ม้าวางบนผิวน้ำ (ROOF_LOGO)
   { const basin=new T.Mesh(new T.CylinderGeometry(11,11.6,2,40),mat('#eceae4')); basin.position.set(656,1,489);
     const water=new T.Mesh(new T.CylinderGeometry(9.8,9.8,.5,40),mat('#6cc3dc',{roughness:.15,metalness:.1})); water.position.set(656,1.9,489);
-    [basin,water].forEach(m=>{ m.castShadow=m.receiveShadow=true; S.add(m); }); }
+    [basin,water].forEach(m=>{ m.castShadow=m.receiveShadow=true; S.add(m); });
+    // ม้าโลหะยืนสองขา 2 ตัว (blender/horse-fountain.py · Meshy จากรูปเจ้าของ · สูง 4 ม. เดาเอา) · ตัวเดียวกันหมุนคนละทิศ
+    G('horseF',[651,2.1,488],-.7,[U,U,U]); G('horseF',[661,2.1,491],.5,[U,U,U]); }
+  // ป้ายตลาด SAVEONE: ลังไม้ซ้อน (blender/sign-tower.py · เมตร · หน้าป้าย +z ของโมเดล → หมุนหันถนน)
+  // ติดถนน หน้าลานกิจกรรม ปากทางรถเข้าข้าง Jetts (เจ้าของ 24 ต.ค. · ตำแหน่งประมาณจากแผนที่ ยังไม่ได้ยืนยัน)
+  G('signT',[1022,2,122],Math.PI,[U,U,U]);
+  // ปากทางรถเข้า (LANE): กรวย 2 ข้าง + แผงกั้นพักไว้ข้างทาง (Meshy ชุดของร้าน 2 · ตำแหน่งเดาเอา)
+  [[1055,134],[1077,134]].forEach(([x,y])=>G('coneM',[x,2,y],0,[U,U,U])); G('barM',[1079,2,120],Math.PI/2,[U,U,U]);
   // หลังคาสูง
   const metal=new T.MeshStandardMaterial({color:'#b9c4cf',roughness:.45,metalness:.5,map:stripeTex(24,'#ffffff','#c9d1d9')});
   [[845,548],[888,548],[845,692],[888,692],[845,620],[888,620]].forEach(([x,y])=>I('post',new T.CylinderGeometry(1.4,1.4,1,8),mat('#7b8088',{metalness:.4}),{p:[x,2+19,y],s:[1,38,1]}));
@@ -668,7 +685,14 @@ function build3(M={}){
   let ci=0;
   ['boot-a','boot-b'].forEach(id=>slots(id).forEach(q=>{ if(rnd()<.88) bootLot(q,ci++); }));
   // รถจอดตามช่องในลานจอด (ไม่ได้ขายของ) · ลานกิจกรรมจอดบางตา
-  PARKS.forEach(id=>slots(id).forEach((q,i)=>{ if(rnd()<(id==='event'?.22:.5)) carAt(q.x,q.y,q.f?0:Math.PI,ci++); }));
+  // รถไทย Meshy ปนในลานจอด: สองแถว · ตุ๊กตุ๊ก · มอเตอร์ไซค์ 3 คันต่อช่อง (เจ้าของ 24 ต.ค.)
+  // หน้ารถ = -x ของโมเดล (ยาวตามแกน x) → หมุนเพิ่ม 90° ให้ยาวตามช่องจอดเหมือนรถ Kenney
+  const thaiAt=(x,y,ry,i)=>{ const r=ry+Math.PI/2;
+    if(i%11===5) return G('songT',[x,2,y],r,[U,U,U]);
+    if(i%13===8) return G('tukT',[x,2,y],r,[U,U,U]);
+    if(i%7===3) return [-.8,0,.8].map(j=>G('motoM',[x+Math.cos(ry)*j*U,2,y-Math.sin(ry)*j*U],r,[U,U,U])).some(Boolean);
+    return false; };
+  PARKS.forEach(id=>slots(id).forEach((q,i)=>{ if(rnd()<(id==='event'?.22:.5)){ const ry=q.f?0:Math.PI; if(!thaiAt(q.x,q.y,ry,ci)) carAt(q.x,q.y,ry,ci); ci++; } }));
 
   // ── คน (สูง 1.7 ม.) เดินตามทางเดิน ──
   const SHIRT=['#ef5b5b','#3f7fd0','#f6cf45','#ffffff','#4fbf86','#2f3542','#f27cb4','#f59e3b'];
@@ -679,6 +703,8 @@ function build3(M={}){
     I('pHead',new T.SphereGeometry(.13*U,10,8),mat('#e0b38c',{roughness:.8}),{p:[x,2+1.5*U,y]}); };
   ['food-sf1','food-sf2'].forEach(id=>slots(id).forEach(q=>{ if(rnd()<.45) person(q.x+q.face*(1.5+2+(rnd()-.5)*2.4)*U,q.y+(rnd()-.5)*2*U,rnd()<.5?0:Math.PI); }));
   ['boot-a','boot-b'].forEach(id=>slots(id).forEach(q=>{ if(rnd()<.3) person(q.x+q.dir*(4+.8+rnd()*4)*U,q.y+(rnd()-.5)*2*U); }));
+  // ทดลองแนวคนชุดใหม่ (Meshy · เจ้าของเลือกแนวก่อนทำทั้งชุด 24 ต.ค.) · ยืนรอบน้ำพุ 3 คน
+  [[640,500,.6],[672,478,-2.2],[677,496,-1.2]].forEach(([x,y,r])=>G('shopW',[x,2,y],r,[U,U,U]));
   for(let i=0;i<30;i++) person(586+rnd()*24,462+rnd()*150);
   for(let i=0;i<14;i++) person(470+rnd()*90,445+rnd()*8);
 
@@ -779,8 +805,13 @@ function openHolo(z){
     :`<div><small>ขนาดล็อก</small><b>${esc(z.lot)}</b></div><div><small>พื้นที่</small><b>${esc(z.m2)}</b></div><div><small>วันนี้ (${dayTxt})</small><b class="big">${range(z)} ฿</b></div><div><small>ทั้งปี / ล็อก / วัน</small><b>${yearRange(z)} ฿</b></div>`;
   card.classList.add('on'); card.setAttribute('aria-hidden','false');
   if(!window.THREE) return;
-  stopHolo(); buildHolo(z);
+  stopHolo(); HG.z=z; buildHolo(z);
+  // ครั้งแรก: วาดแบบเดิมก่อน (ไม่ต้องรอ) → โหลดของการ์ดเสร็จ วาดใหม่ถ้ายังเปิดการ์ดนี้อยู่
+  if(!HG.ready) loadHolo().then(()=>{ HG.ready=true; if(HG.z===z&&card.classList.contains('on')){ stopHolo(); buildHolo(z); } });
 }
+function loadHolo(){ return HG.load||(HG.load=(async()=>{ if(!THREE.GLTFLoader||!W3.M) return; const L=new THREE.GLTFLoader();
+  await Promise.all(Object.entries(HOLO_MODELS).map(([k,f])=>fetch(A('models/holo/'+f+'.glb')).then(r=>{ if(!r.ok) throw r.status; return r.arrayBuffer(); })
+    .then(b=>new Promise((ok,no)=>L.parse(b,'',ok,no))).then(g=>{ g.scene.traverse(o=>{ if(o.isMesh){ o.material.metalness=0; o.material.roughness=.7; } }); W3.M[k]=g; }).catch(()=>{}))); })()); }
 function stopHolo(){ cancelAnimationFrame(HG.raf); HG.raf=0;
   if(HG.S){ HG.S.traverse(o=>{ if(o.geometry&&!o.userData.keep) o.geometry.dispose(); }); HG.S=null; } HG.mix=[]; }
 // ร้านตัวอย่าง = โมเดลสีจริง มีแสงเงา บนพื้นวงกลมเรืองแสงแบบเดิม
@@ -805,13 +836,18 @@ function buildHolo(z){
   const steel=mat('#c3c9d1',{metalness:.6,roughness:.35}), wood=mat('#b98a5b'), dark=mat('#2b3038',{roughness:.5});
   const stripe=(a,b)=>new T.MeshStandardMaterial({map:stripeTex(8,a,b),roughness:.6,side:T.DoubleSide});
   // โมเดล GLB: ของนิ่ง = clone · คน = clone โครงกระดูก + ขยับท่ายืน (idle)
-  const glb=(k,p,ry,s)=>{ const src=MM[k]; if(!src) return null; const sk=isCh(k), o=src.scene.clone();
+  // คน Meshy (RIG): ต้อง clone ด้วย SkeletonUtils ไม่งั้นทุกตัวผูกกระดูกชุดเดียวกัน
+  const glb=(k,p,ry,s)=>{ const src=MM[k]; if(!src) return null; const sk=isCh(k), rig=RIG.includes(k), o=rig?T.SkeletonUtils.clone(src.scene):src.scene.clone();
     o.position.set(...p); o.rotation.y=ry; o.scale.set(...(Array.isArray(s)?s:[s,s,s]));
     o.traverse(m=>{ if(m.isMesh){ m.castShadow=m.receiveShadow=true; m.frustumCulled=false; m.userData.keep=true; } });
-    if(sk){ const cl=src.animations.find(a=>a.name==='idle'); if(cl){ const mx=new T.AnimationMixer(o); mx.clipAction(cl).play(); mx.update(Math.random()*2); HG.mix.push(mx); } }
+    if(sk||rig){ const cl=rig?src.animations[0]:src.animations.find(a=>a.name==='idle'); if(cl){ const mx=new T.AnimationMixer(o); mx.clipAction(cl).play(); mx.update(Math.random()*2); HG.mix.push(mx); } }
     g.add(o); return o; };
   const CH=Object.keys(MM).filter(isCh); let ci=0;
-  const person=(x,zz,ry=0,shirt)=>{ if(CH.length){ const k_=CH[(ci++*5)%CH.length], h=new T.Box3().setFromObject(MM[k_].scene); if(glb(k_,[x,0,zz],ry,1.7/(h.max.y-h.min.y))) return; }
+  // คนในการ์ด = คน Meshy วนตามลำดับ (เจ้าของเลือกแนวนี้ 24 ต.ค.) · โหลดไม่ได้ → คน Kenney → ทรงกระบอก
+  const person=(x,zz,ry=0,shirt)=>{ const n=ci++;
+    // ขนาดจริงอยู่ในกระดูกแล้ว (ตั้งตอน rig) · Box3 วัดคนมีกระดูกผิด (วัดท่าตั้งต้น ×0.01) → ใช้ scale 1
+    const RK=RIG.filter(k=>MM[k]); if(RK.length&&T.SkeletonUtils&&glb(RK[n%RK.length],[x,0,zz],ry,1)) return;
+    if(CH.length){ const k_=CH[(n*5)%CH.length], h=new T.Box3().setFromObject(MM[k_].scene); if(glb(k_,[x,0,zz],ry,1.7/(h.max.y-h.min.y))) return; }
     add(Cy(.07,.75,8),[x-.09,.37,zz],0,'#3a3f4a'); add(Cy(.07,.75,8),[x+.09,.37,zz],0,'#3a3f4a');
     add(new T.CylinderGeometry(.17,.21,.7,12),[x,1.08,zz],0,shirt||'#ef5b5b'); add(new T.SphereGeometry(.13,14,10),[x,1.58,zz],0,'#e0b38c'); };
   // พื้นที่ล็อก: แผ่นสีโซน + ขอบ
@@ -829,11 +865,13 @@ function buildHolo(z){
     [[-1.25,-1.25],[1.25,-1.25],[-1.25,1.25],[1.25,1.25]].forEach(([u,v])=>add(Cy(.035,2.3,8),[u,1.15,v],0,steel));
     add(new T.ConeGeometry(1.86,.75,4,1,true),[0,2.68,0],[0,Math.PI/4,0],stripe('#ffffff','#e2671c'));
     add(B(2.5,.3,.03),[0,2.15,1.27],0,'#e2671c'); }
-    // เตาย่าง + หม้อ + กล่องน้ำแข็ง
+    // เตาปิ้งถ่าน + ถังแก๊ส + กระติกน้ำแข็ง (Meshy ชุดของร้าน · เมตรจริง) · ยังไม่โหลด = กล่องแบบเดิม
+    if(!glb('grill',[-.15,0,-.45],0,1)){
     add(B(.95,.12,.45),[-.15,.86,-.45],0,dark); add(B(.04,.8,.4),[-.6,.4,-.45],0,steel); add(B(.04,.8,.4),[.3,.4,-.45],0,steel);
     for(let i=0;i<6;i++) add(Cy(.018,.42,6),[-.5+i*.14,.95,-.45],[Math.PI/2,0,0],i%2?'#c7653a':'#d9a35a');
-    add(new T.SphereGeometry(.05,8,6),[-.35,1.0,-.45],0,mat('#ff7a2e',{emissive:'#ff5a00',emissiveIntensity:.8}));
-    add(B(.55,.38,.36),[.95,.19,-.75],0,'#2d6fd1'); add(B(.57,.06,.38),[.95,.41,-.75],0,'#ffffff'); add(Cy(.16,.3,16),[.95,.6,-.75],0,steel);
+    add(new T.SphereGeometry(.05,8,6),[-.35,1.0,-.45],0,mat('#ff7a2e',{emissive:'#ff5a00',emissiveIntensity:.8})); }
+    glb('gas',[.95,0,.1],-Math.PI/2,1);
+    if(!glb('cooler',[.95,0,-.8],0,1)){ add(B(.55,.38,.36),[.95,.19,-.75],0,'#2d6fd1'); add(B(.57,.06,.38),[.95,.41,-.75],0,'#ffffff'); add(Cy(.16,.3,16),[.95,.6,-.75],0,steel); }
     goods(.05,.76,.95,4,['#f6cf45','#ef5b5b','#4fbf86','#f59e3b']);
     glb('stool',[.45,0,1.55],0,2.4)||add(Cy(.17,.05,14),[.45,.5,1.55],0,'#e2671c');
     person(-.2,-1.0,0); person(.3,1.75,Math.PI);
@@ -853,14 +891,16 @@ function buildHolo(z){
     if(src&&q){ const k=4.3/(q.bb.max.z-q.bb.min.z), kx=1.8/(q.bb.max.x-q.bb.min.x); glb('suv',[0,-q.bb.min.y*k*.85,-1.85],HOLO_CAR_RY,[kx,k*.85,k]);
       add(B(1.4,.04,1.0),[0,1.95,-.05],[-.55,0,0],mat('#9fb4c6',{roughness:.15,metalness:.3})); }
     else { add(B(1.78,.62,4.25),[0,.64,-1.85],0,'#2d5fa8'); add(B(1.6,.58,2.3),[0,1.24,-2.0],0,mat('#1f2a36',{roughness:.15})); }
-    // ราวแขวนเสื้อ · ผ้าใบวางของ · ร่ม
+    // ราวแขวนเสื้อ · ผ้าใบวางของ · ร่ม · ลังผัก · ป้ายตั้ง (Meshy · ยังไม่โหลด = ทรงง่ายแบบเดิม)
+    if(!glb('rack',[0,0,3.25],0,1)){
     [-1,1].forEach(x=>add(Cy(.025,1.6,8),[x,.8,3.25],0,steel)); add(Cy(.02,2.1,8),[0,1.6,3.25],[0,0,Math.PI/2],steel);
-    for(let i=0;i<6;i++) add(B(.28,.55,.04),[-.75+i*.3,1.27,3.25],0,PALx[i]);
+    for(let i=0;i<6;i++) add(B(.28,.55,.04),[-.75+i*.3,1.27,3.25],0,PALx[i]); }
+    glb('aframe',[-.95,0,.75],.3,1);
     add(B(1.6,.03,1.2),[0,.015,1.4],0,'#3f7fd0');
     add(B(1.3,.04,.6),[0,.72,1.35],0,'#f4f1ea'); [[-.6,1.1],[.6,1.1],[-.6,1.6],[.6,1.6]].forEach(([x,zz])=>add(B(.03,.7,.03),[x,.35,zz],0,steel));
     [[-.4,.2,'#ef5b5b'],[0,.14,'#f6cf45'],[.4,.24,'#4fbf86']].forEach(([x,h,c])=>add(B(.3,h,.25),[x,.74+h/2,1.35],0,c));
-    for(let i=0;i<4;i++) add(B(.35,.12,.3),[-.6+i*.4,.09,2.2],0,PALx[(i+3)%7]);
-    add(new T.ConeGeometry(1.1,.35,12,1,true),[.95,2.15,3.65],0,stripe('#ffffff','#7b3fd6')); add(Cy(.02,2.1,8),[.95,1.05,3.65],0,steel);
+    if(!glb('veg',[-.75,0,2.25],.2,1)) for(let i=0;i<4;i++) add(B(.35,.12,.3),[-.6+i*.4,.09,2.2],0,PALx[(i+3)%7]);
+    if(!glb('umbM',[.95,0,3.65],0,.8)){ add(new T.ConeGeometry(1.1,.35,12,1,true),[.95,2.15,3.65],0,stripe('#ffffff','#7b3fd6')); add(Cy(.02,2.1,8),[.95,1.05,3.65],0,steel); }
     person(-.75,2.4,Math.PI/2); person(.4,4.4,Math.PI); person(.9,2.9,-Math.PI/2);
   } else if(z.model==='park'){
     Rd=4.6; dist=15; look=.6;
